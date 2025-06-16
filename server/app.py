@@ -19,6 +19,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+
+
 # ------------------------------------------------------------------------------------
 # ORM models
 # ------------------------------------------------------------------------------------
@@ -32,10 +34,15 @@ class Track(db.Model):
     title    = db.Column(db.String(255), nullable=False)
     file_url = db.Column(db.String(255), nullable=False)
 
-# Create tables on first request (fine for small projects / dev)
-@app.before_first_request
-def create_tables() -> None:
-    db.create_all()
+# ------------------------------------------------------------------
+# DB initialisation – run once when this module is imported
+# ------------------------------------------------------------------
+def init_database() -> None:
+    """Create empty tables if they don’t exist (Flask ≥ 3)."""
+    with app.app_context():        # push app context so SQLAlchemy can work
+        db.create_all()
+
+init_database()                    # ← runs immediately
 
 # ------------------------------------------------------------------------------------
 # Routes
