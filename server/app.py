@@ -4,11 +4,12 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 from pathlib import Path
+from models import db, User, Post, Media, Comment, Like, Follow
 
 # ------------------------------------------------------------------------------------
 # Flask + SQLAlchemy setup
 # ------------------------------------------------------------------------------------
-app = Flask(__name__, static_folder="../client/build", static_url_path="/")
+app = Flask(__name__, static_folder="../client/soundgalore-gen1/build", static_url_path="/")
 CORS(app)
 
 # DB location: use env var if present, otherwise local SQLite file
@@ -17,22 +18,8 @@ default_sqlite = "sqlite:///" + str(basedir / "data.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", default_sqlite)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
-
-
-# ------------------------------------------------------------------------------------
-# ORM models
-# ------------------------------------------------------------------------------------
-class User(db.Model):                       # already showed you this earlier
-    id       = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80),  nullable=False)
-    email    = db.Column(db.String(120), nullable=False)
-
-class Track(db.Model):
-    id       = db.Column(db.Integer, primary_key=True)
-    title    = db.Column(db.String(255), nullable=False)
-    file_url = db.Column(db.String(255), nullable=False)
 
 # ------------------------------------------------------------------
 # DB initialisation – run once when this module is imported
@@ -51,18 +38,18 @@ init_database()                    # ← runs immediately
 def ping():
     return {"msg": "pong"}
 
-@app.route("/api/tracks", methods=["POST"])
-def upload_track():
+@app.route("/api/media", methods=["POST"])
+def upload_media():
     data = request.get_json(force=True)       # ensure JSON body
-    new_track = Track(title=data["title"], file_url=data["fileUrl"])
-    db.session.add(new_track)
+    new_media = Media(title=data["title"], file_url=data["fileUrl"])
+    db.session.add(new_media)
     db.session.commit()
-    return {"status": "ok", "id": new_track.id}, 201
+    return {"status": "ok", "id": new_media.id}, 201
 
-@app.route("/api/tracks", methods=["GET"])
-def list_tracks():
-    tracks = Track.query.all()
-    return jsonify([{"id": t.id, "title": t.title, "fileUrl": t.file_url} for t in tracks])
+@app.route("/api/media", methods=["GET"])
+def list_media():
+    media = Media.query.all()
+    return jsonify([{"id": t.id, "title": t.title, "fileUrl": t.file_url} for t in media])
 
 # ------------------------------------------------------------------------------------
 # Serve React build (production)

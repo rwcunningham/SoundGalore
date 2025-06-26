@@ -1,0 +1,8 @@
+{
+  "name": "react-flask-root",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix client/soundgalore-gen1 start",
+    "install": "npm --prefix client/soundgalore-gen1 install"
+  }
+}
