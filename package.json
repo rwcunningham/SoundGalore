@@ -4,5 +4,8 @@
   "scripts": {
     "start": "npm --prefix client/soundgalore-gen1 start",
     "install": "npm --prefix client/soundgalore-gen1 install"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.6.3"
   }
 }

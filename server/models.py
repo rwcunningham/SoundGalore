@@ -18,14 +18,13 @@ Key design choices
 * Association tables for **Like** and **Follow** using composite PKs for fast
   existence queries ("has user already liked this post?").
 * Self‑referencing Comment table supports threaded replies.
-
-Feel free to add more (Tags, Notifications, DirectMessages, etc.).
 """
 
 import uuid
 from datetime import datetime, timezone
-
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 # the "db" instance will be initialised in app.py
 
@@ -43,7 +42,7 @@ def _uuid() -> str:
 _now_utc = lambda: datetime.now(timezone.utc)
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
@@ -52,7 +51,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # relationships
+    # relationships (these don't affect the actual database, they just )
     posts = db.relationship("Post", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     comments = db.relationship("Comment", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     likes = db.relationship("Like", backref="user", lazy="dynamic", cascade="all, delete-orphan")
@@ -71,6 +70,42 @@ class User(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+    def set_password(self, raw_pw: str) -> None:
+        self.password_hash = generate_password_hash(raw_pw, method="pbkdf2:sha256")
+
+    def check_password(self, raw_pw: str) -> bool:
+        return check_password_hash(self.password_hash, raw_pw) #werkzeug method to check password
+
+
+
+    def feed(self, *, limit: int = 20, before: datetime | None = None):
+        """
+        Return a query for the most-recent, non-deleted Posts written by
+        accounts this user follows.
+
+        • Key-set pagination: pass `before` = last-seen `created_at` timestamp.
+        • Change `limit` for page size / infinite scroll window.
+        """
+        q = (
+            Post.query
+            .join(Follow, Follow.followed_id == Post.user_id)
+            .filter(
+                Follow.follower_id == self.id,    # only whom *I* follow
+                Post.is_deleted.is_(False),       # hide soft-deleted
+            )
+        )
+        if before is not None:                    # key-set pagination
+            q = q.filter(Post.created_at < before)
+
+        return (
+            q.order_by(Post.created_at.desc())    # newest first
+             .limit(limit)
+             .options(                            # avoid N+1 later
+                 db.subqueryload(Post.media),
+                 db.subqueryload(Post.author)
+             )
+        )
+
 
     def __repr__(self) -> str:  # pragma: no cover – debug convenience
         return f"<User {self.username}>"
@@ -86,9 +121,19 @@ class Post(db.Model):
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
 
     # relationships
-    media = db.relationship("Media", backref="post", lazy="dynamic", cascade="all, delete-orphan")
+    media = db.relationship("Media", backref="post", lazy="select", cascade="all, delete-orphan")
     comments = db.relationship("Comment", backref="post", lazy="dynamic", cascade="all, delete-orphan")
     likes = db.relationship("Like", backref="post", lazy="dynamic", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "text": self.text,
+            "created_at": self.created_at.isoformat(),
+            "media": [m.url for m in self.media]
+        }
+
 
 
 class Media(db.Model):
