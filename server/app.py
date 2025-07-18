@@ -18,7 +18,7 @@ load_dotenv() #loads all the environment variables in .\.env
 # Flask + SQLAlchemy setup
 # ------------------------------------------------------------------------------------
 app = Flask(__name__, static_folder="../client/soundgalore-gen1/build", static_url_path="/")
-CORS(app, origins=["https://localhost:3000"])\
+CORS(app, origins=["https://localhost:3000"], supports_credentials=True)
 
 #Prepare Authentication
 login_manager = LoginManager(app)
@@ -48,6 +48,8 @@ init_database()                    # ← runs immediately
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
+
+
 # ------------------------------------------------------------------------------------
 # Routes
 # ------------------------------------------------------------------------------------
@@ -83,15 +85,55 @@ def api_feed():
     return jsonify([p.to_dict() for p in posts])
 
 
+@app.post("/api/users")
+def create_user():
+
+    data = request.get_json(force=True)
+    user = User(username=data["username"], email=data["email"])
+    user.set_password(data["password"])
+
+    #
+    # 1. Data Validation Step:
+    #
+
+    required = ["username","email","password"]
+    missing = []
+    for attribute in required:
+        if not data.get(attribute):
+            missing += attribute
+    if missing:
+        return {"error":f"missing fields: {','.join(missing)}"}, 400
+
+
+    db.session.add(user)
+    try:
+        db.commit()
+    except:
+        db.session.rollback()
+        return {"error":"session session already exists"}, 409
+    
+    return {"id":user.id, 
+            "username":user.username, 
+            "email":user.email}, 201
+
+
+
+    
+    
+
+
 #login screen will send a POST Request with a JSON that contains username: and password: keys
 @app.post("/auth/login")
 def login() -> tuple[dict, int]:
-
+    
     # get the data the user entered
     # keys needed: email, password, 
     data = request.get_json(force=True)
     # find the first/only user with that email address:
-    user = User.query.filter_by(email=data.get("email")).first()
+    user = User.query.filter_by(username=data.get("username")).first()
+    if not user:
+        return {"error":"invalid username"}, 401
+        
 
     # Authenticate
     if user and user.check_password( # ensure the user exists
@@ -129,5 +171,7 @@ def serve(path: str):
     return send_from_directory(app.static_folder, "index.html")
 
 # ------------------------------------------------------------------------------------
+# create an example user for our table
+
 if __name__ == "__main__":
     app.run(debug=True)
