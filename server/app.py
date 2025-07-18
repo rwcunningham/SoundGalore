@@ -117,6 +117,37 @@ def create_user():
             "email":user.email}, 201
 
 
+@app.post("/api/follows")
+def create_follow():
+    data = request.get_json(force=True)
+    follow = Follow(follower_id = data.follower_id, followed_id = data.followed_id)
+    
+    #1. data validation step:
+    required = ["follower_id", "followed_id"]
+    missing = []
+    for attribute in required:
+        if not data.get(attribute):
+            missing += attribute
+
+    if missing:
+        return {"error":"missing follower or followed"}, 400
+
+
+    db.session.add(follow)
+    try:
+        db.commit()
+    except:
+        db.session.rollback()
+        return{"error":"the follow probably already exists"}, 409
+    
+    return {"follower_id":follow.follower_id,
+            "followed_id":follow.followed_id,
+            "created_at":follow.created_at}
+
+
+
+
+
 
     
     
