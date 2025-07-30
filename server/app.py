@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from models import db, User, Post, Media, Comment, Like, Follow
 
+from werkzeug.utils import secure_filename
+
 load_dotenv() #loads all the environment variables in .\.env
 
 # ------------------------------------------------------------------------------------
@@ -58,10 +60,104 @@ def load_user(user_id):
 def ping():
     return {"msg": "pong"}
 
-@app.route("/api/media", methods=["POST"])
+@app.route("/api/upload_media", methods=["POST"])
 @login_required
 def upload_media():
     data = request.get_json(force=True)       # ensure JSON body
+    file = request.files.get('file') # make sure the request has a key called "file"
+
+    if not file:
+        return jsonify({'error':'post to api/media was missing file'})
+    
+    filename = secure_filename(file)
+    
+    if (data.media_type == "audio"):
+        upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','audio')
+        file.save(upload_path)
+        return jsonify({'url':'static/uploads/audio/{filename}'})
+    
+    elif (data.media_type == "img"):
+        upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','images')
+        file.save(upload_path)
+        return jsonify({'url':'static/uploads/images/{filename}'})
+    
+@login_required
+@app.post('/api/media')
+def upload_media():
+    data = request.get_json(force=True)
+    file_url = data.url
+    filename = data.filename
+
+    #id, post_id, media_type, url, width, height, duration, created_at
+    media_type = data.media_type
+    created_at = data.created_at
+
+    if (data.width):
+        width = data.width
+    else:
+        width = None
+
+    if (data.height):
+        height = data.height
+    else:
+        height = None       
+
+    if (data.duration):
+        duration = data.duration
+    else:
+        duration = None
+
+    if (data.post_id):
+        post_id = data.post_id
+    else:
+        post_id = None
+
+    piece_of_media = Media(url=file_url, 
+                           filename=filename, 
+                           media_type=media_type, 
+                           created_at=created_at, 
+                           width=width, 
+                           height=height, 
+                           duration=duration,
+                           post_id=post_id)
+    return jsonify({'status':'ok', 'id':piece_of_media.id})
+    
+
+
+
+
+
+
+
+
+
+@login_required
+@app.route('/api/posts')
+def create_post():
+    data = request.get_json(force=True)
+    # id, user_id, text, created_at, is_deleted, 
+    
+    user_id = data.user_id
+    text = data.text
+    created_at = data.created_at
+    is_deleted = data.is_deleted
+
+    new_post = Post(user_id=user_id, created_at=created_at, is_deleted=is_deleted, text=text)
+
+    return jsonify({'user_id':'{new_post.user_id}',
+                    'text':'{new_post.text}',
+                    'created_at':'{new_post.created_at}',
+                    'is_deleted':'{new_post.is_deleted}',})
+
+
+    
+    
+    
+    
+
+    
+
+
     new_media = Media(url=data["url"])
     db.session.add(new_media)
     db.session.commit()
@@ -143,14 +239,6 @@ def create_follow():
     return {"follower_id":follow.follower_id,
             "followed_id":follow.followed_id,
             "created_at":follow.created_at}
-
-
-
-
-
-
-    
-    
 
 
 #login screen will send a POST Request with a JSON that contains username: and password: keys
