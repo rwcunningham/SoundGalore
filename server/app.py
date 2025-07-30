@@ -14,6 +14,10 @@ from models import db, User, Post, Media, Comment, Like, Follow
 
 from werkzeug.utils import secure_filename
 
+from PIL import Image #used to get metadata from an image, independent of the type of image
+
+import time, datetime 
+
 load_dotenv() #loads all the environment variables in .\.env
 
 # ------------------------------------------------------------------------------------
@@ -63,23 +67,26 @@ def ping():
 @app.route("/api/upload_media", methods=["POST"])
 @login_required
 def upload_media():
-    data = request.get_json(force=True)       # ensure JSON body
+    media_type = request.form.get("media_type")       # ensure JSON body
     file = request.files.get('file') # make sure the request has a key called "file"
 
     if not file:
         return jsonify({'error':'post to api/media was missing file'})
     
-    filename = secure_filename(file)
+    filename = secure_filename(file.filename)
     
-    if (data.media_type == "audio"):
+    if (media_type == "audio"):
         upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','audio')
         file.save(upload_path)
-        return jsonify({'url':'static/uploads/audio/{filename}'})
+        img = Image.open(file.stream)
+        width, height = img.size
+        Media(media_type='audio', url=upload_path, width=width, height=height, filename=filename)
+        return jsonify({'url':'static/uploads/audio/{filename}', 'timestamp':'{timestamp}'})
     
-    elif (data.media_type == "img"):
+    elif (data.media_type == "image"):
         upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','images')
         file.save(upload_path)
-        return jsonify({'url':'static/uploads/images/{filename}'})
+        return jsonify({'url':'static/uploads/images/{filename}', 'timestamp':'{timestamp}'})
     
 @login_required
 @app.post('/api/media')
@@ -121,15 +128,6 @@ def upload_media():
                            duration=duration,
                            post_id=post_id)
     return jsonify({'status':'ok', 'id':piece_of_media.id})
-    
-
-
-
-
-
-
-
-
 
 @login_required
 @app.route('/api/posts')
@@ -148,20 +146,6 @@ def create_post():
                     'text':'{new_post.text}',
                     'created_at':'{new_post.created_at}',
                     'is_deleted':'{new_post.is_deleted}',})
-
-
-    
-    
-    
-    
-
-    
-
-
-    new_media = Media(url=data["url"])
-    db.session.add(new_media)
-    db.session.commit()
-    return {"status": "ok", "id": new_media.id}, 201
 
 @app.route("/api/media", methods=["GET"])
 def list_media():

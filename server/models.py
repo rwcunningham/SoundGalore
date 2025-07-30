@@ -110,7 +110,7 @@ class User(db.Model, UserMixin):
     def __repr__(self) -> str:  # pragma: no cover – debug convenience
         return f"<User {self.username}>"
 
-
+# id, user_id, text, created_at, is_deleted, 
 class Post(db.Model):
     __tablename__ = "posts"
 
@@ -135,15 +135,16 @@ class Post(db.Model):
         }
 
 
-
+#id, post_id, media_type, url, width, height, duration, created_at
 class Media(db.Model):
     __tablename__ = "media"
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
-    post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=False, index=True)
+    post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
 
     media_type = db.Column(db.String(20), nullable=False)  # image | audio | video
     url = db.Column(db.String(255), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
 
     # optional metadata – helpful for clients but not required
     width = db.Column(db.Integer)
