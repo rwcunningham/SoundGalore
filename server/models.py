@@ -141,6 +141,7 @@ class Media(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
     post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), index=True)
 
     media_type = db.Column(db.String(20), nullable=False)  # image | audio | video
     url = db.Column(db.String(255), nullable=False)

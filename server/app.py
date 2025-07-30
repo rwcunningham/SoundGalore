@@ -80,10 +80,10 @@ def upload_media():
         file.save(upload_path)
         img = Image.open(file.stream)
         width, height = img.size
-        Media(media_type='audio', url=upload_path, width=width, height=height, filename=filename)
+        Media(media_type='audio', url=upload_path, width=width, height=height, filename=filename, user_id=current_user.id)
         return jsonify({'url':'static/uploads/audio/{filename}', 'timestamp':'{timestamp}'})
     
-    elif (data.media_type == "image"):
+    elif (media_type == "image"):
         upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','images')
         file.save(upload_path)
         return jsonify({'url':'static/uploads/images/{filename}', 'timestamp':'{timestamp}'})
