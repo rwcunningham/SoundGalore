@@ -61,14 +61,14 @@ export default function AudioPlayer()
         return (
         <div className="AudioPlayer">
             
-            
-
             <audio ref={audioRef} src={audioUrl} preload="metadata"/>
-            <br/><button onClick={togglePlayPause}> {isPlaying ? "Pause" : "Play"} </button>  {/* need to add className with some tailwind CSS, for another day...*/}
+            <br/><button className="play-pause-button" onClick={togglePlayPause}> {isPlaying ? "\u23F8" : "\u25B6"} </button>  {/* need to add className with some tailwind CSS, for another day...*/}
             <input type="range" min="0" max={duration} value={currentTime} step="0.1" onChange={handleSeek}/> {/*need to add className and tailwind stuff */}
-            <p>
-            {formatTime(currentTime)} / {formatTime(duration)}
-            </p>
+            <div className="current-time">
+                <p>
+                {formatTime(currentTime)} / {formatTime(duration)}
+                </p>
+            </div>
         </div>
         )
 };

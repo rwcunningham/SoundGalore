@@ -87,47 +87,6 @@ def upload_media():
         upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','images')
         file.save(upload_path)
         return jsonify({'url':'static/uploads/images/{filename}', 'timestamp':'{timestamp}'})
-    
-@login_required
-@app.post('/api/media')
-def upload_media():
-    data = request.get_json(force=True)
-    file_url = data.url
-    filename = data.filename
-
-    #id, post_id, media_type, url, width, height, duration, created_at
-    media_type = data.media_type
-    created_at = data.created_at
-
-    if (data.width):
-        width = data.width
-    else:
-        width = None
-
-    if (data.height):
-        height = data.height
-    else:
-        height = None       
-
-    if (data.duration):
-        duration = data.duration
-    else:
-        duration = None
-
-    if (data.post_id):
-        post_id = data.post_id
-    else:
-        post_id = None
-
-    piece_of_media = Media(url=file_url, 
-                           filename=filename, 
-                           media_type=media_type, 
-                           created_at=created_at, 
-                           width=width, 
-                           height=height, 
-                           duration=duration,
-                           post_id=post_id)
-    return jsonify({'status':'ok', 'id':piece_of_media.id})
 
 @login_required
 @app.route('/api/posts')

@@ -1,5 +1,6 @@
 import {useNavigate} from "react-router-dom";
 import React, {useState, useRef} from "react";
+import Header from "../components/Header";
 
 export default function Login(){
     const navigate = useNavigate();
@@ -44,20 +45,27 @@ export default function Login(){
 
     return(
     <>
-        <main>
+        <main className="login-page">
             <Header/>
-            <form onSubmit={handleSubmit}>
-                <label>
-                    Username:
-                    <input type="text" name="username" onChange={handleChange} value={credentials.username} required/>
-                </label>
-
-                <label>
-                    Password:
-                    <input type="text" name="password" onChange={handleChange} value={credentials.password} required/>
-                </label>
-                <button type="submit">Sign In</button>
-            </form>   
+            <section className="login-card">
+                <form onSubmit={handleSubmit}>
+                    <div className="field">
+                        <label htmlFor="username">
+                            Username:
+                            <input type="text" name="username" onChange={handleChange} value={credentials.username} required/>
+                        </label>
+                    </div>
+                        <br/>
+                    <div className="field">
+                        <label htmlFor="password">
+                            Password:
+                            <input type="text" name="password" onChange={handleChange} value={credentials.password} required/>
+                        </label>
+                    </div>
+                    <br/>
+                    <button type="submit">Sign In</button>
+                </form>   
+            </section>
         </main>
     </>
     )

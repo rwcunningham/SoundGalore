@@ -7,7 +7,7 @@ export default function Header(){
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    Welcome to Soundgalore!   
+                    SoundGalore   
                 </a>
                 </header>
     )
