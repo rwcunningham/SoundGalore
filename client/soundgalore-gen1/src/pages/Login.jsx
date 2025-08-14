@@ -52,14 +52,14 @@ export default function Login(){
                     <div className="field">
                         <label htmlFor="username">
                             Username:
-                            <input type="text" name="username" onChange={handleChange} value={credentials.username} required/>
+                            <input type="text" autocomplete="username" id="username" name="username" onChange={handleChange} value={credentials.username} required/>
                         </label>
                     </div>
                         <br/>
                     <div className="field">
                         <label htmlFor="password">
                             Password:
-                            <input type="text" name="password" onChange={handleChange} value={credentials.password} required/>
+                            <input type="password" id="password" name="password" onChange={handleChange} value={credentials.password} required/>
                         </label>
                     </div>
                     <br/>

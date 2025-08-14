@@ -19,7 +19,7 @@ export default function AudioPicker({onSelect}){
     return (
         <>
             <div>
-                <button type="button" onClick={triggerPicker}>Browse Audio...</button>
+                <button type="button" onClick={triggerPicker}>Browse Audio... </button>
                 {/*if you send a "click" event to an input element of type "file", the Browser/OS should automatically open the file picker*/} 
                 {/*accept= allows you to pattern match the MIME for the file*/} 
                 <input type="file" name='audio-input' accept='audio/*' ref={audioInputRef} onChange={handleChange}  hidden />  

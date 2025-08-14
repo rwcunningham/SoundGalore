@@ -81,15 +81,16 @@ export default function NewPost(){
     
     return (
         <>
-            <main>
-                <h1>Please Select an image and an audio file for your post</h1>
+            <main className="NewPost">
                 <Header/>
+                <p className="newpost-description">Please Select an image and an audio file for your post</p>
                 <ImagePicker onSelect={handleImageSelect}/>
                 <AudioPicker onSelect={handleAudioSelect}/>
-                <h1>Description of what you're sharing:</h1>
+                <p className="newpost-description">Description of what you're sharing:</p>
             <form onSubmit={handleSubmit}>
-                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Say something about this post..."/>
-                <button type="submit"/>
+                <input type="text" className="newpost-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Say something about this post..."/>
+                <br/>
+                <button className="submit-newpost-button" type="submit">Submit...</button>
             </form>
             </main>
         </>

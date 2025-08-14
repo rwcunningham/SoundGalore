@@ -18,7 +18,7 @@ export default function ImagePicker({onSelect}){
     return (
         <>
             <div>
-                <button type="button" onClick={triggerPicker}>Browse...</button>
+                <button type="button" onClick={triggerPicker}>Browse Image...</button>
                 {/*if you send a "click" event to an input element, the Browser/OS should automatically open the file picker*/} 
                 {/*accept= allows you to pattern match the MIME for the file*/} 
                 <input type="file" name='photo-input' accept='image/*' ref={photoInputRef} onChange={handleChange}  hidden />  
