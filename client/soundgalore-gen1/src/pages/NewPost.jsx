@@ -28,7 +28,7 @@ export default function NewPost(){
         try{
             // upload the image
             const imgForm = new FormData();
-            imgForm.append('file', imageFile);
+            imgForm.append('file', imageFile, imageFile.name);
             imgForm.append('media_type', 'image');
 
             const imgRes = await fetch('/api/upload_media', {
@@ -38,11 +38,13 @@ export default function NewPost(){
             });
             if (!imgRes.ok) throw new Error(`Image upload failed: HTTP ${imgRes.status}`);
             const {media_id: image_media_id} = await imgRes.json();
+            console.log('Image uploaded', imgRes)
         //upload the audio
 
         const audForm = new FormData();
-        audForm.append('file', audioFile);
         audForm.append('media_type','audio');
+        audForm.append('file', audioFile, audioFile.name);
+        
 
         const audRes = await fetch('/api/upload_media',{
             method: 'POST',
@@ -52,7 +54,7 @@ export default function NewPost(){
 
         if (!audRes.ok) throw new Error(`Audio upload failed: HTTP ${audRes.status}`);
         const {media_id: audio_media_id} = await audRes.json();
-
+        console.log('Audio uploaded',audRes)
         // Now create the post with both pieces of media
         
         const postRes = await fetch('/api/posts', {
@@ -60,7 +62,7 @@ export default function NewPost(){
             credentials:'include',
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({
-                description,
+                text: description,
                 image_media_id,
                 audio_media_id,
             })
@@ -84,11 +86,13 @@ export default function NewPost(){
             <main className="NewPost">
                 <Header/>
                 <p className="newpost-description">Please Select an image and an audio file for your post</p>
-                <ImagePicker onSelect={handleImageSelect}/>
-                <AudioPicker onSelect={handleAudioSelect}/>
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <ImagePicker onSelect={handleImageSelect}/>
+                    <AudioPicker onSelect={handleAudioSelect}/>
+                </div>
                 <p className="newpost-description">Description of what you're sharing:</p>
             <form onSubmit={handleSubmit}>
-                <input type="text" className="newpost-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Say something about this post..."/>
+                <textarea id="description" className="newpost-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Say something about this post..." rows={4} maxLength={500}/>
                 <br/>
                 <button className="submit-newpost-button" type="submit">Submit...</button>
             </form>

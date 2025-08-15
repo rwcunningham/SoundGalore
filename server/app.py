@@ -15,8 +15,7 @@ from models import db, User, Post, Media, Comment, Like, Follow
 from werkzeug.utils import secure_filename
 
 from PIL import Image #used to get metadata from an image, independent of the type of image
-
-import time, datetime 
+ 
 
 load_dotenv() #loads all the environment variables in .\.env
 
@@ -76,35 +75,58 @@ def upload_media():
     filename = secure_filename(file.filename)
     
     if (media_type == "audio"):
-        upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','audio')
-        file.save(upload_path)
-        img = Image.open(file.stream)
-        width, height = img.size
-        Media(media_type='audio', url=upload_path, width=width, height=height, filename=filename, user_id=current_user.id)
-        return jsonify({'url':'static/uploads/audio/{filename}', 'timestamp':'{timestamp}'})
+        upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','audio'))
+        os.makedirs(upload_dir, exist_ok=True)
+        dest_path = os.path.join(upload_dir, filename)
+        file.save(dest_path)
+
+        url = f"/audio/{filename}"
+        timestamp = datetime.utcnow().isoformat()
+        
+        media_entry = Media(media_type='audio', url=url, filename=filename, user_id=current_user.id)
+        db.session.add(media_entry)
+        db.session.commit()
+        return jsonify({'url':url, 'timestamp':timestamp}), 201
     
     elif (media_type == "image"):
-        upload_path = os.path.join(app.root_path, '.','client','soundgalore-gen1','public','images')
-        file.save(upload_path)
-        return jsonify({'url':'static/uploads/images/{filename}', 'timestamp':'{timestamp}'})
+        upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','images'))
+        os.makedirs(upload_dir, exist_ok=True)
+        dest_path = os.path.join(upload_dir, filename)
+        file.save(dest_path)
 
+        url = f"/images/{filename}"
+        timestamp = datetime.utcnow().isoformat()
+        media_entry = Media(media_type='image', url=url, filename=filename, user_id=current_user.id)
+        db.session.add(media_entry)
+        db.session.commit()
+        return jsonify({'media_id':'media_entry.id', 'url':url, 'timestamp':timestamp}), 201
+    return jsonify({'error':'unsupported media_type'}), 400
+
+
+@app.post('/api/posts')
 @login_required
-@app.route('/api/posts')
 def create_post():
     data = request.get_json(force=True)
     # id, user_id, text, created_at, is_deleted, 
     
-    user_id = data.user_id
-    text = data.text
-    created_at = data.created_at
-    is_deleted = data.is_deleted
+    user_id = current_user.user_id
+    text = data.get('text','')
+    image_media_id = data.get('image_media_id')
+    audio_media_id = data.get('audio_media_id')
+
+    created_at = data.get('created_at')
+    is_deleted = data.get('is_deleted', False)
 
     new_post = Post(user_id=user_id, created_at=created_at, is_deleted=is_deleted, text=text)
+    db.session.add(new_post)
+    db.session.commit()
 
     return jsonify({'user_id':'{new_post.user_id}',
                     'text':'{new_post.text}',
                     'created_at':'{new_post.created_at}',
-                    'is_deleted':'{new_post.is_deleted}',})
+                    'is_deleted':'{new_post.is_deleted}',
+                    'id' : new_post.id}), 201
+                    
 
 @app.route("/api/media", methods=["GET"])
 def list_media():
