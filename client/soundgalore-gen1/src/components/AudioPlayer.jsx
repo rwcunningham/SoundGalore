@@ -4,10 +4,12 @@ import React, {useState, useEffect, useRef} from "react";
 export default function AudioPlayer()
 {
     const audioRef = useRef(null);
+    const imageRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [audioUrl, setAudioUrl] = useState("/audio/sample.mp3");
+    const [imageUrl, setImageUrl] = useState("/images/IMG_2527.jpeg");
 
     // event handlers and other "side effects" go in here:
     useEffect( () => { 
@@ -60,7 +62,9 @@ export default function AudioPlayer()
     }
         return (
         <div className="AudioPlayer">
-            
+            <div className="square-container">
+                <img ref={imageRef} src={imageUrl} preload="metadata" style={{ maxWidth: '100%', height: 'auto' }}/>
+            </div>
             <audio ref={audioRef} src={audioUrl} preload="metadata"/>
             <br/><button className="play-pause-button" onClick={togglePlayPause}> {isPlaying ? "\u23F8" : "\u25B6"} </button>  {/* need to add className with some tailwind CSS, for another day...*/}
             <input type="range" min="0" max={duration} value={currentTime} step="0.1" onChange={handleSeek}/> {/*need to add className and tailwind stuff */}

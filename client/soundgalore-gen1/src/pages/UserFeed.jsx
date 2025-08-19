@@ -6,9 +6,9 @@ export default function UserFeed(){
     return(
         <div className="UserFeed">
             <Header/>
-            <p>
+            <div>
                 <Link to="/NewPost">Upload a new post here</Link>
-            </p>
+            </div>
             <AudioPlayer/>
             
         </div>

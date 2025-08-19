@@ -42,37 +42,6 @@ export default function NewPost(){
             // const {media_id: image_media_id} = await mediaRes.json();
             console.log('Image and Audio uploaded', mediaRes)
             
-            
-            //upload the audio
-
-            
-            /*
-
-            const audRes = await fetch('/api/upload_media',{
-                method: 'POST',
-                body: audForm,
-                credentials: 'include',
-            });
-
-            if (!audRes.ok) throw new Error(`Audio upload failed: HTTP ${audRes.status}`);
-            const {media_id: audio_media_id} = await audRes.json();
-            console.log('Audio uploaded',audRes)
-            // Now create the post with both pieces of media
-            
-            const postRes = await fetch('/api/posts', {
-                method:'POST',
-                credentials:'include',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({
-                    text: description,
-                    image_media_id,
-                    audio_media_id,
-                })
-            });
-            if (!postRes.ok) throw new Error(`Create post failed: HTTP ${postRes.status}`);
-            const created = await postRes.json();
-            console.log('Post created:', created);
-            */
 
             // Clear local state
             setImageFile(null);
