@@ -119,11 +119,14 @@ class Post(db.Model):
     text = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    image_media_id =db.Column(db.String(36), db.ForeignKey("media.id"))
+    audio_media_id = db.Column(db.String(36), db.ForeignKey("media.id"))
 
     # relationships
-    media = db.relationship("Media", backref="post", lazy="select", cascade="all, delete-orphan")
     comments = db.relationship("Comment", backref="post", lazy="dynamic", cascade="all, delete-orphan")
     likes = db.relationship("Like", backref="post", lazy="dynamic", cascade="all, delete-orphan")
+    image = db.relationship("Media", foreign_keys=[image_media_id])
+    audio = db.relationship("Media", foreign_keys=[audio_media_id])
 
     def to_dict(self):
         return {
@@ -140,7 +143,7 @@ class Media(db.Model):
     __tablename__ = "media"
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
-    post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
+    #post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), index=True)
 
     media_type = db.Column(db.String(20), nullable=False)  # image | audio | video

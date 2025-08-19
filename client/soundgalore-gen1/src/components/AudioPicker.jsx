@@ -13,8 +13,7 @@ export default function AudioPicker({onSelect}){
     const handleChange = (e) => {
         const file = e.target.files?.[0] || null;
         onSelect?.(file);
-
-    }
+    };
 
     return (
         <>

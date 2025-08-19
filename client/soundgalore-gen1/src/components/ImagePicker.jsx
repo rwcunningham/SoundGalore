@@ -9,11 +9,13 @@ export default function ImagePicker({onSelect}){
 
     const triggerPicker = () => {
         // if (!photoInputRef.current) return;
-        photoInputRef.current?.click();}; // if there is a file there, then trigger a click() to open the file picker
+        photoInputRef.current?.click();
+    }; // if there is a file there, then trigger a click() to open the file picker
+    
     const handleChange = (e) => {
         const file = e.target.files?.[0] || null;
         onSelect?.(file);
-    }
+    };
 
     return (
         <>
@@ -25,5 +27,4 @@ export default function ImagePicker({onSelect}){
             </div>
         </>
     );
-
 }

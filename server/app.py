@@ -15,6 +15,10 @@ from models import db, User, Post, Media, Comment, Like, Follow
 from werkzeug.utils import secure_filename
 
 from PIL import Image #used to get metadata from an image, independent of the type of image
+
+from pathlib import Path
+
+
  
 
 load_dotenv() #loads all the environment variables in .\.env
@@ -23,7 +27,9 @@ load_dotenv() #loads all the environment variables in .\.env
 # Flask + SQLAlchemy setup
 # ------------------------------------------------------------------------------------
 app = Flask(__name__, static_folder="../client/soundgalore-gen1/build", static_url_path="/")
-CORS(app, origins=["https://localhost:3000"], supports_credentials=True)
+CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
+
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
 #Prepare Authentication
 login_manager = LoginManager(app)
@@ -55,6 +61,12 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
+# make sure the instance folder exists
+Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+db_path = Path(app.instance_path) / "data.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+
 # ------------------------------------------------------------------------------------
 # Routes
 # ------------------------------------------------------------------------------------
@@ -66,41 +78,81 @@ def ping():
 @app.route("/api/upload_media", methods=["POST"])
 @login_required
 def upload_media():
-    media_type = request.form.get("media_type")       # ensure JSON body
-    file = request.files.get('file') # make sure the request has a key called "file"
+    print("upload_media -> form:", request.form.to_dict(), 
+      "files:", list(request.files.keys()))
 
-    if not file:
-        return jsonify({'error':'post to api/media was missing file'})
-    
-    filename = secure_filename(file.filename)
-    
-    if (media_type == "audio"):
-        upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','audio'))
-        os.makedirs(upload_dir, exist_ok=True)
-        dest_path = os.path.join(upload_dir, filename)
-        file.save(dest_path)
+        # ensure JSON body
+    audioFile = request.files.get('audioFile') # make sure the request has a key called "file"
+    imageFile = request.files.get('imageFile') # 
 
-        url = f"/audio/{filename}"
-        timestamp = datetime.utcnow().isoformat()
-        
-        media_entry = Media(media_type='audio', url=url, filename=filename, user_id=current_user.id)
-        db.session.add(media_entry)
+    if not audioFile:
+        return jsonify({'error':'post to api/media was missing audio file'})
+    if not imageFile:
+        return jsonify({'error':'post to api/media was missing image file'})
+    
+    audioFilename = secure_filename(audioFile.filename)
+    imageFilename = secure_filename(imageFile.filename)
+    
+    #if (media_type == "audio"):
+
+        #upload the audio
+    audio_upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','audio'))
+    os.makedirs(audio_upload_dir, exist_ok=True)
+    audio_dest_path = os.path.join(audio_upload_dir, audioFilename)
+    audioFile.save(audio_dest_path)
+
+    audioUrl = f"/audio/{audioFilename}"
+    
+    audio_media_entry = Media(media_type='audio', url=audioUrl, filename=audioFilename, user_id=current_user.id)
+    db.session.add(audio_media_entry)
+    db.session.commit()
+
+    #upload the image
+    image_upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','images'))
+    os.makedirs(image_upload_dir, exist_ok=True)
+    image_dest_path = os.path.join(image_upload_dir, imageFilename)
+    imageFile.save(image_dest_path)
+
+    imageUrl = f"/images/{imageFilename}"
+
+    image_media_entry = Media(media_type='image', url=imageUrl, filename=imageFilename, user_id=current_user.id)
+    db.session.add(image_media_entry)
+    db.session.commit()
+
+    try:
+        db.session.add_all([audio_media_entry, image_media_entry])
         db.session.commit()
-        return jsonify({'url':url, 'timestamp':timestamp}), 201
-    
-    elif (media_type == "image"):
-        upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','images'))
-        os.makedirs(upload_dir, exist_ok=True)
-        dest_path = os.path.join(upload_dir, filename)
-        file.save(dest_path)
 
-        url = f"/images/{filename}"
-        timestamp = datetime.utcnow().isoformat()
-        media_entry = Media(media_type='image', url=url, filename=filename, user_id=current_user.id)
-        db.session.add(media_entry)
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Upload failed")
+        return jsonify({"error": str(e)}), 500
+    
+
+    post_description = request.form.get('description')
+    new_post_entry = Post(user_id=current_user.id, is_deleted=False, text=post_description, image_media_id=image_media_entry.id, audio_media_id=audio_media_entry.id)
+
+    try:
+        db.session.add(new_post_entry)
         db.session.commit()
-        return jsonify({'media_id':'media_entry.id', 'url':url, 'timestamp':timestamp}), 201
-    return jsonify({'error':'unsupported media_type'}), 400
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("New Post Creation failed")
+        return jsonify({'error':str(e)}), 500
+
+    return jsonify({'audioUrl':audioUrl, 
+                    'audioTimestamp':audio_media_entry.created_at, 
+                    'audio_media_id':audio_media_entry.id,
+                    'imageUrl':imageUrl,
+                    'imageTimestamp':image_media_entry.created_at,
+                    'image_media_id':image_media_entry.id,
+                    'new_post_id':new_post_entry.id
+                    }), 201
+
+    
+
+
+    
 
 
 @app.post('/api/posts')
@@ -109,7 +161,7 @@ def create_post():
     data = request.get_json(force=True)
     # id, user_id, text, created_at, is_deleted, 
     
-    user_id = current_user.user_id
+    user_id = current_user.id
     text = data.get('text','')
     image_media_id = data.get('image_media_id')
     audio_media_id = data.get('audio_media_id')
@@ -117,7 +169,7 @@ def create_post():
     created_at = data.get('created_at')
     is_deleted = data.get('is_deleted', False)
 
-    new_post = Post(user_id=user_id, created_at=created_at, is_deleted=is_deleted, text=text)
+    new_post = Post(user_id=user_id, created_at=created_at, is_deleted=is_deleted, text=text, image_media_id=image_media_id, audio_media_id=audio_media_id)
     db.session.add(new_post)
     db.session.commit()
 
@@ -240,6 +292,17 @@ def logout():
     return {"msg":"logged out"}
 
 
+@app.errorhandler(400)
+def handle_400(e):
+    app.logger.exception("400 on %s: %s", request.path, e)
+    # Log what the server actually received at the socket level (if available)
+    try:
+        app.logger.info("Headers: %s", dict(request.headers))
+    except Exception:
+        pass
+    return jsonify(error=str(e)), 400
+
+
 # ------------------------------------------------------------------------------------
 # Serve React build (production)
 # ------------------------------------------------------------------------------------
@@ -258,4 +321,4 @@ def serve(path: str):
 # create an example user for our table
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

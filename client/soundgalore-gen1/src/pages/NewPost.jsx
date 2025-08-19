@@ -24,61 +24,64 @@ export default function NewPost(){
             return;
         }
 
-        
         try{
-            // upload the image
-            const imgForm = new FormData();
-            imgForm.append('file', imageFile, imageFile.name);
-            imgForm.append('media_type', 'image');
+            // upload the image and audio and description at once
+            const form = new FormData();
+            form.append('audioFile', audioFile, audioFile.name);
+            form.append('imageFile', imageFile, imageFile.name);
+            form.append('description', description);
 
-            const imgRes = await fetch('/api/upload_media', {
+            const mediaRes = await fetch('/api/upload_media', {
                 method: 'POST', 
-                body: imgForm, 
+                body: form, 
+                description: description,
                 credentials: 'include'
             });
-            if (!imgRes.ok) throw new Error(`Image upload failed: HTTP ${imgRes.status}`);
-            const {media_id: image_media_id} = await imgRes.json();
-            console.log('Image uploaded', imgRes)
-        //upload the audio
 
-        const audForm = new FormData();
-        audForm.append('media_type','audio');
-        audForm.append('file', audioFile, audioFile.name);
-        
+            if (!mediaRes.ok) throw new Error(`Image or Audio upload failed: HTTP ${mediaRes.status}`);
+            // const {media_id: image_media_id} = await mediaRes.json();
+            console.log('Image and Audio uploaded', mediaRes)
+            
+            
+            //upload the audio
 
-        const audRes = await fetch('/api/upload_media',{
-            method: 'POST',
-            body: audForm,
-            credentials: 'include',
-        });
+            
+            /*
 
-        if (!audRes.ok) throw new Error(`Audio upload failed: HTTP ${audRes.status}`);
-        const {media_id: audio_media_id} = await audRes.json();
-        console.log('Audio uploaded',audRes)
-        // Now create the post with both pieces of media
-        
-        const postRes = await fetch('/api/posts', {
-            method:'POST',
-            credentials:'include',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-                text: description,
-                image_media_id,
-                audio_media_id,
-            })
-        });
-        if (!postRes.ok) throw new Error(`Create post failed: HTTP ${postRes.status}`);
-        const created = await postRes.json();
-        console.log('Post created:', created);
+            const audRes = await fetch('/api/upload_media',{
+                method: 'POST',
+                body: audForm,
+                credentials: 'include',
+            });
 
-        // Clear local state
-        setImageFile(null);
-        setAudioFile(null);
-        setDescription('');
-    } catch (err){
-        console.error(err);
-      }
-    };
+            if (!audRes.ok) throw new Error(`Audio upload failed: HTTP ${audRes.status}`);
+            const {media_id: audio_media_id} = await audRes.json();
+            console.log('Audio uploaded',audRes)
+            // Now create the post with both pieces of media
+            
+            const postRes = await fetch('/api/posts', {
+                method:'POST',
+                credentials:'include',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    text: description,
+                    image_media_id,
+                    audio_media_id,
+                })
+            });
+            if (!postRes.ok) throw new Error(`Create post failed: HTTP ${postRes.status}`);
+            const created = await postRes.json();
+            console.log('Post created:', created);
+            */
+
+            // Clear local state
+            setImageFile(null);
+            setAudioFile(null);
+            setDescription('');
+        } catch (err){
+            console.error(err);
+        }
+        };
 
     
     return (
