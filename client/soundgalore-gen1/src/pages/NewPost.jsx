@@ -12,6 +12,7 @@ export default function NewPost(){
     const[imageFile, setImageFile] = useState(null);
     const[audioFile, setAudioFile] = useState(null);
     const[description, setDescription] = useState('');
+    const navigate = useNavigate();
 
     
     const handleImageSelect = (file) => setImageFile(file);
@@ -39,18 +40,18 @@ export default function NewPost(){
             });
 
             if (!mediaRes.ok) throw new Error(`Image or Audio upload failed: HTTP ${mediaRes.status}`);
-            // const {media_id: image_media_id} = await mediaRes.json();
-            console.log('Image and Audio uploaded', mediaRes)
-            
 
-            // Clear local state
-            setImageFile(null);
+            const { new_post_id } = await mediaRes.json();
+             // Clear local state 
+            setImageFile(null); 
             setAudioFile(null);
             setDescription('');
+            navigate(`/new_post_successful`, { replace: true, state: {postId: new_post_id } });
+            return;
         } catch (err){
             console.error(err);
         }
-        };
+    };
 
     
     return (

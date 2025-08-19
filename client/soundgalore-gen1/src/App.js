@@ -14,6 +14,7 @@ import NewPost from './pages/NewPost';
 import AudioPlayer from './components/AudioPlayer';
 import Header from './components/Header.jsx';
 import {Routes, Route, Navigate} from 'react-router-dom';
+import NewPostSuccessful from './pages/NewPostSuccessful.jsx';
 
 
 function App() {
@@ -21,7 +22,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />}/>
         <Route path="/userfeed" element={<UserFeed/>}/>
-        <Route path="newpost" element={<NewPost/>}/>
+        <Route path="/newpost" element={<NewPost/>}/>
+        <Route path="/new_post_successful" element={<NewPostSuccessful/>}/>
         <Route path ="*" element={<Navigate to="/" replace/>}/>
       </Routes>
   )

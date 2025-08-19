@@ -26,10 +26,17 @@ load_dotenv() #loads all the environment variables in .\.env
 # ------------------------------------------------------------------------------------
 # Flask + SQLAlchemy setup
 # ------------------------------------------------------------------------------------
+
 app = Flask(__name__, static_folder="../client/soundgalore-gen1/build", static_url_path="/")
 CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+
+app.config['UPLOAD_AUDIO_DIR'] = os.path.join(app.root_path, 'uploads', 'audio')
+app.config['UPLOAD_IMAGE_DIR'] = os.path.join(app.root_path, 'uploads', 'images')
+os.makedirs(app.config['UPLOAD_AUDIO_DIR'], exist_ok=True)
+os.makedirs(app.config['UPLOAD_IMAGE_DIR'], exist_ok=True)
+
 
 #Prepare Authentication
 login_manager = LoginManager(app)
@@ -97,9 +104,12 @@ def upload_media():
 
         #upload the audio
     audio_upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','audio'))
-    os.makedirs(audio_upload_dir, exist_ok=True)
-    audio_dest_path = os.path.join(audio_upload_dir, audioFilename)
-    audioFile.save(audio_dest_path)
+    #os.makedirs(audio_upload_dir, exist_ok=True)
+    #audio_dest_path = os.path.join(audio_upload_dir, audioFilename)
+    #audioFile.save(audio_dest_path)
+    audio_dest_path = os.path.join(app.config['UPLOAD_AUDIO_DIR'], audioFilename)
+
+
 
     audioUrl = f"/audio/{audioFilename}"
     
@@ -109,9 +119,11 @@ def upload_media():
 
     #upload the image
     image_upload_dir = os.path.normpath(os.path.join(app.root_path, '..','client','soundgalore-gen1','public','images'))
-    os.makedirs(image_upload_dir, exist_ok=True)
-    image_dest_path = os.path.join(image_upload_dir, imageFilename)
-    imageFile.save(image_dest_path)
+    #os.makedirs(image_upload_dir, exist_ok=True)
+    #image_dest_path = os.path.join(image_upload_dir, imageFilename)
+    #imageFile.save(image_dest_path)
+    image_dest_path = os.path.join(app.config['UPLOAD_IMAGE_DIR'], imageFilename)
+
 
     imageUrl = f"/images/{imageFilename}"
 
@@ -153,7 +165,13 @@ def upload_media():
 
 
     
+@app.route('/audio/<path:filename>')
+def serve_audio(filename):
+    return send_from_directory(app.config['UPLOAD_AUDIO_DIR'], filename)
 
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    return send_from_directory(app.config['UPLOAD_IMAGE_DIR'], filename)
 
 @app.post('/api/posts')
 @login_required
