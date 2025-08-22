@@ -12,18 +12,23 @@ import Login from './pages/Login';
 import UserFeed from './pages/UserFeed';
 import NewPost from './pages/NewPost';
 import AudioPlayer from './components/AudioPlayer';
-import Header from './components/Header.jsx';
+import Header from './components/Header';
+import MyFollowees from './pages/MyFollowees'
+import MyFollowers from './pages/MyFollowers'
 import {Routes, Route, Navigate} from 'react-router-dom';
-import NewPostSuccessful from './pages/NewPostSuccessful.jsx';
+import NewPostSuccessful from './pages/NewPostSuccessful';
+
 
 
 function App() {
   return(
       <Routes>
-        <Route path="/" element={<Login />}/>
+        <Route path="/" element={<Login/>}/>
         <Route path="/userfeed" element={<UserFeed/>}/>
         <Route path="/newpost" element={<NewPost/>}/>
         <Route path="/new_post_successful" element={<NewPostSuccessful/>}/>
+        <Route path="/my_followees" element={<MyFollowees/>}/>
+        <Route path="/my_followers" element={<MyFollowers/>}/>
         <Route path ="*" element={<Navigate to="/" replace/>}/>
       </Routes>
   )

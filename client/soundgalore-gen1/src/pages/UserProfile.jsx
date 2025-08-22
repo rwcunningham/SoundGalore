@@ -4,8 +4,6 @@ import {useNavigate} from 'react-router-dom'
 
 
 export default function userProfile(
-
-    current_user = 
     
     const handleFollow = () = > {
     followRes = await fetch('api/follows',

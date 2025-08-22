@@ -65,7 +65,7 @@ class User(db.Model, UserMixin):
     )
     followers = db.relationship(
         "Follow",
-        foreign_keys="Follow.followed_id",
+        foreign_keys="Follow.followee_id",
         backref="followed",
         lazy="dynamic",
         cascade="all, delete-orphan",
@@ -88,7 +88,7 @@ class User(db.Model, UserMixin):
         """
         q = (
             Post.query
-            .join(Follow, Follow.followed_id == Post.user_id)
+            .join(Follow, Follow.followee_id == Post.user_id)
             .filter(
                 Follow.follower_id == self.id,    # only whom *I* follow
                 Post.is_deleted.is_(False),       # hide soft-deleted
@@ -190,9 +190,17 @@ class Like(db.Model):
 
 class Follow(db.Model):
     __tablename__ = "follows"
-
+    
+    # follower_id + followee_id composite PK prevents duplicate follow rows.
     follower_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
-    followed_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
+    followee_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # follower_id + followed_id composite PK prevents duplicate follow rows.
+    # Index going both: slows down writes, but we can retrieve the followers and follows more quickly 
+    __table_args__ = (
+        db.Index("ix_follower_follow_created","follower_id", "created_at"),
+        db.Index("ix_follow_followed_created", "followee_id", "created_at"),
+        db.CheckConstraint('follower_id != followee_id', name='ck_no_self_follow')
+    )
+
+    

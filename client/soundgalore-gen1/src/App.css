@@ -166,3 +166,46 @@ input[type="password"]{
   aspect-ratio: 1 / 1;
   overflow:hidden;
 }
+
+.followees-list {
+  list-style: none;
+  padding: 0;
+}
+
+.followee-row {
+  display: flex;
+  justify-content: space-between; /* pushes name left, date right */
+  padding: 4px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.followee-name {
+  font-weight: bold;
+}
+
+.followee-date {
+  color: #555;
+  font-size: 0.9em;
+}
+
+
+.followers-list {
+  list-style: none;
+  padding: 0;
+}
+
+.follower-row {
+  display: flex;
+  justify-content: space-between; /* pushes name left, date right */
+  padding: 4px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.follower-name {
+  font-weight: bold;
+}
+
+.follower-date {
+  color: #555;
+  font-size: 0.9em;
+}

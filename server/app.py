@@ -82,6 +82,75 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 def ping():
     return {"msg": "pong"}
 
+@app.route("/api/get_current_user")
+@login_required
+def get_current_user():
+    return jsonify({
+    "current_user_id": current_user.id,
+    "current_user_username": current_user.username,
+    "current_user_email":current_user.email
+    }), 200
+
+
+@app.get("/api/my_followees")
+@login_required
+def my_followees():
+    rows = (
+        db.session.query(
+            Follow.follower_id,
+            Follow.followee_id,
+            User.username.label("followee_name"),
+            Follow.created_at,
+        )
+        .join(User, User.id == Follow.followee_id)
+        .filter(Follow.follower_id == current_user.id)
+        .order_by(Follow.created_at.desc())
+        .all()
+    )
+
+    result = [
+        {
+            "follower_id":r.follower_id,
+            "followee_id":r.followee_id,
+            "followee_name" : r.followee_name,
+            "created_at": r.created_at.isoformat(),
+        } for r in rows
+    ]
+    return jsonify(result), 200
+
+@app.get("/api/my_followers")
+@login_required
+def my_followers():
+    rows = (
+        db.session.query(
+            Follow.followee_id,
+            Follow.follower_id,
+            User.username.label("follower_name"),
+            Follow.created_at,
+        )
+        .join(User, User.id == Follow.follower_id)
+        .filter(Follow.followee_id == current_user.id)
+        .order_by(Follow.created_at.desc())
+        .all()
+    )
+
+    result = [
+        {
+            "followee_id":r.followee_id,
+            "follower_id":r.follower_id,
+            "follower_name" : r.follower_name,
+            "created_at": r.created_at.isoformat(),
+        } for r in rows
+    ]
+    return jsonify(result), 200
+    
+
+
+    
+
+
+    
+
 @app.route("/api/upload_media", methods=["POST"])
 @login_required
 def upload_media():
