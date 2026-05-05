@@ -7,7 +7,7 @@
 //import React, import CSS, import logos, 
 import React, {useState, useEffect, useRef} from 'react';
 import logo from './logo.svg';
-import './App.css';
+import './styles/App.css';
 import Login from './pages/Login';
 import UserFeed from './pages/UserFeed';
 import NewPost from './pages/NewPost';

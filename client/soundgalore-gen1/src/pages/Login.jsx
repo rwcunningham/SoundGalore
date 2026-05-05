@@ -1,6 +1,7 @@
 import {useNavigate} from "react-router-dom";
 import React, {useState, useRef} from "react";
 import Header from "../components/Header";
+import "../styles/pages/Login.css";
 
 export default function Login(){
     const navigate = useNavigate();
@@ -24,12 +25,17 @@ export default function Login(){
                 headers:{"Content-Type":"application/json"},
                 credentials:"include",
                 body: JSON.stringify(credentials)});
-        
+            
+            if (res.status === 401){
+                throw new Error("Sorry, your username or password was incorrect. Please try again.");
+            }    
 
             if (!res.ok){
                 const error = await res.json();
                 throw new Error(error || "Unknown error");
             }
+
+            
 
             // const {token} = await res.json();
             navigate("/UserFeed");
@@ -49,6 +55,13 @@ export default function Login(){
             <Header/>
             <section className="login-card">
                 <form onSubmit={handleSubmit}>
+                    <div>
+                        {error && (
+                            <p className="login-error">
+                                {error}
+                            </p>
+                        )}
+                    </div>
                     <div className="field">
                         <label htmlFor="username">
                             Username:
@@ -62,6 +75,8 @@ export default function Login(){
                             <input type="password" id="password" name="password" onChange={handleChange} value={credentials.password} required/>
                         </label>
                     </div>
+                    
+        
                     <br/>
                     <button type="submit">Sign In</button>
                 </form>   
