@@ -213,12 +213,14 @@ def upload_media():
         db.session.add_all([audio_media_entry, image_media_entry])
         db.session.flush()
 
+        post_title = request.form.get("title")
         post_description = request.form.get("description", "")
 
         new_post_entry = Post(
             user_id=current_user.id,
+            title = post_title,
             is_deleted=False,
-            text=post_description,
+            description=post_description,
             image_media_id=image_media_entry.id,
             audio_media_id=audio_media_entry.id,
         )
@@ -233,10 +235,12 @@ def upload_media():
 
     return jsonify(
         {
-            "audioUrl": audio_url,
-            "audioTimestamp": audio_media_entry.created_at.isoformat(),
+            "post_title": post_title,
+            "post_description":post_description,
+            "audio_url": audio_url,
+            "audio_timestamp": audio_media_entry.created_at.isoformat(),
             "audio_media_id": audio_media_entry.id,
-            "imageUrl": image_url,
+            "image_url": image_url,
             "imageTimestamp": image_media_entry.created_at.isoformat(),
             "image_media_id": image_media_entry.id,
             "new_post_id": new_post_entry.id,
@@ -259,31 +263,36 @@ def serve_image(filename: str):
 def create_post():
     data = request.get_json(force=True)
 
-    text = data.get("text", "")
+    title = data.get("title", "").strip()
+
+    description = data.get("description", "")
     image_media_id = data.get("image_media_id")
     audio_media_id = data.get("audio_media_id")
     is_deleted = data.get("is_deleted", False)
 
+    if not title:
+        return jsonify({"error": "missing title"}), 400
+
+
     new_post = Post(
         user_id=current_user.id,
-        text=text,
+        title=title,
+        description=description,
         is_deleted=is_deleted,
         image_media_id=image_media_id,
         audio_media_id=audio_media_id,
     )
 
     db.session.add(new_post)
-    db.session.commit()
 
-    return jsonify(
-        {
-            "user_id": new_post.user_id,
-            "text": new_post.text,
-            "created_at": new_post.created_at.isoformat(),
-            "is_deleted": new_post.is_deleted,
-            "id": new_post.id,
-        }
-    ), 201
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Create post failed")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify(new_post.to_dict()), 201
 
 
 @app.route("/api/media", methods=["GET"])

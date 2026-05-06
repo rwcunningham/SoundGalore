@@ -1,4 +1,5 @@
 from __future__ import annotations
+from sqlalchemy.orm import selectinload
 
 """
 Flask‑SQLAlchemy data model for a minimal social‑media style prototype.
@@ -101,8 +102,9 @@ class User(db.Model, UserMixin):
             q.order_by(Post.created_at.desc())    # newest first
              .limit(limit)
              .options(                            # avoid N+1 later
-                 db.subqueryload(Post.media),
-                 db.subqueryload(Post.author)
+                 db.selectinload(Post.image),
+                 db.selectinload(Post.audio),
+                 db.selectinload(Post.author)
              )
         )
 
@@ -116,7 +118,8 @@ class Post(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
-    text = db.Column(db.Text)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
     image_media_id =db.Column(db.String(36), db.ForeignKey("media.id"))
@@ -132,9 +135,12 @@ class Post(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "text": self.text,
+            "username": self.author.username,
+            "title": self.title,
+            "description": self.description,
             "created_at": self.created_at.isoformat(),
-            "media": [m.url for m in self.media]
+            "image_url": self.image.url if self.image else None,
+            "audio_url": self.audio.url if self.audio else None
         }
 
 

@@ -1,15 +1,15 @@
 import React, {useState, useEffect, useRef} from "react";
 
 
-export default function AudioPlayer()
+export default function AudioPlayer({post})
 {
     const audioRef = useRef(null);
     const imageRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const [audioUrl, setAudioUrl] = useState("/audio/sample.mp3");
-    const [imageUrl, setImageUrl] = useState("/images/IMG_2527.jpeg");
+    const audioUrl = post?.audio_url || "/audio/sample.mp3";
+    const imageUrl = post?.image_url || "/images/IMG_2527.jpeg";
 
     // event handlers and other "side effects" go in here:
     useEffect( () => { 
@@ -34,7 +34,7 @@ export default function AudioPlayer()
             audioElem.removeEventListener("timeupdate", handleTimeUpdate);
             audioElem.removeEventListener("ended",handleEnded);
         }
-        }, []);
+        }, [audioUrl]);
 
     // helper for formatting time on the screen
     const formatTime = (timeSecs) => {
@@ -62,6 +62,19 @@ export default function AudioPlayer()
     }
         return (
         <div className="AudioPlayer">
+            <div className="post-info">
+                <p className="post-user">
+                    Posted by {post?.username || post?.user?.username || "Unknown user"}
+                </p>
+
+                <h2 className="post-title">
+                    {post?.title || "Untitled post"}
+                </h2>
+
+                <p className="post-description">
+                    {post?.description || post?.text || ""}
+                </p>
+            </div>
             <div className="square-container">
                 <img ref={imageRef} src={imageUrl} preload="metadata" style={{ maxWidth: '100%', height: 'auto' }}/>
             </div>
