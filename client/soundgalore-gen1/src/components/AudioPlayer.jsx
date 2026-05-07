@@ -1,15 +1,26 @@
 import React, {useState, useEffect, useRef} from "react";
 
 
-export default function AudioPlayer({post})
+export default function AudioPlayer({post, isActive, onPlay, onOutOfFocus})
 {
     const audioRef = useRef(null);
     const imageRef = useRef(null);
+    const playerRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const audioUrl = post?.audio_url || "/audio/sample.mp3";
     const imageUrl = post?.image_url || "/images/IMG_2527.jpeg";
+
+    const resetAudio = () => {
+        const audioElem = audioRef.current;
+        if (!audioElem) return;
+
+        audioElem.pause();
+        audioElem.currentTime = 0;
+        setIsPlaying(false);
+        setCurrentTime(0);
+    }
 
     // event handlers and other "side effects" go in here:
     useEffect( () => { 
@@ -36,6 +47,32 @@ export default function AudioPlayer({post})
         }
         }, [audioUrl]);
 
+    useEffect(() => {
+        if (!isActive) {
+            resetAudio();
+        }
+    }, [isActive]);
+
+    useEffect(() => {
+        if (!playerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) {
+                    resetAudio();
+                    onOutOfFocus();
+                }
+            },
+            {
+                threshold: 0.25,
+            }
+        );
+
+        observer.observe(playerRef.current);
+
+        return () => observer.disconnect();
+    }, [onOutOfFocus]);
+
     // helper for formatting time on the screen
     const formatTime = (timeSecs) => {
         if(!Number.isFinite(timeSecs)) return "00:00";
@@ -48,6 +85,11 @@ export default function AudioPlayer({post})
     const togglePlayPause = () => {
         const audioElem = audioRef.current;
         if (!audioElem) return;
+
+        if (!isPlaying) {
+            onPlay();
+        }
+
         isPlaying ? audioElem.pause() : audioElem.play(); //pause if playing, play if paused
         setIsPlaying(!isPlaying); //flip the state of the play button
     }
@@ -61,7 +103,7 @@ export default function AudioPlayer({post})
         setCurrentTime(newTime);
     }
         return (
-        <div className="AudioPlayer">
+        <div ref={playerRef} className="AudioPlayer">
             <div className="post-info">
                 <p className="post-user">
                     Posted by {post?.username || post?.user?.username || "Unknown user"}

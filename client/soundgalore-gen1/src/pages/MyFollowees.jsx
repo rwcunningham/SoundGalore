@@ -53,7 +53,7 @@ export default function MyFollowees(){
             </li>
         ))}
         </ul>
-        <Link to="/user_feed">Back to My Feed</Link>
+        <Link to="/UserFeed">Back to My Feed</Link>
     </div>
 );
 }

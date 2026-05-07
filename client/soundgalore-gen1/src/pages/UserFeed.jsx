@@ -1,21 +1,25 @@
-import {useEffect, useState} from "react";
+import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
 import {Link} from "react-router-dom";
+
+const PAGE_SIZE = 20;
 
 export default function UserFeed(){
     const [currentUsername, setCurrentUsername] = useState("");
     const [posts, setPosts] = useState([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMorePosts, setHasMorePosts] = useState(true);
+    const [activePostId, setActivePostId] = useState(null);
 
+    const loadMoreRef = useRef(null);
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const res = await fetch("/api/get_current_user",{
-                    "method":"GET",
-                    "credentials":"include",
+                const res = await fetch("/api/get_current_user", {
+                    method: "GET",
+                    credentials: "include",
                 });
 
                 if (res.ok){
@@ -39,14 +43,10 @@ export default function UserFeed(){
                 }
 
                 const data = await res.json();
-                console.log("FEED DATA:", data);
-                console.log("NUMBER OF POSTS:", data.length);
 
                 setPosts(data);
 
-                // if fewer than 20 posts came back,
-                // there are probably no more posts to load
-                if (data.length < 20) {
+                if (data.length < PAGE_SIZE) {
                     setHasMorePosts(false);
                 }
 
@@ -54,12 +54,12 @@ export default function UserFeed(){
                 console.error("Failed to fetch feed: ", err);
             }
         };
-        
-    fetchUser();
-    fetchFeed();
+
+        fetchUser();
+        fetchFeed();
     }, []);
 
-    const fetchMorePosts = async () => {
+    const fetchMorePosts = useCallback(async () => {
         if (isLoadingMore || !hasMorePosts || posts.length === 0) return;
 
         setIsLoadingMore(true);
@@ -81,22 +81,55 @@ export default function UserFeed(){
 
             const data = await res.json();
 
-            setPosts((prev) => [...prev, ...data]);
+            if (data.length === 0) {
+                setHasMorePosts(false);
+                return;
+            }
 
-            if (data.length < 20) {
+            setPosts((prev) => {
+                const existingIds = new Set(prev.map((post) => post.id));
+                const newPosts = data.filter((post) => !existingIds.has(post.id));
+                return [...prev, ...newPosts];
+            });
+
+            if (data.length < PAGE_SIZE) {
                 setHasMorePosts(false);
             }
+
         } catch (err) {
             console.error("Failed to fetch more posts: ", err);
         } finally {
             setIsLoadingMore(false);
         }
-    };
+    }, [isLoadingMore, hasMorePosts, posts]);
 
+    useEffect(() => {
+        if (!loadMoreRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+
+                if (entry.isIntersecting) {
+                    fetchMorePosts();
+                }
+            },
+            {
+                root: null,
+                rootMargin: "400px",
+                threshold: 0,
+            }
+        );
+
+        observer.observe(loadMoreRef.current);
+
+        return () => observer.disconnect();
+    }, [fetchMorePosts]);
 
     return(
         <div className="UserFeed">
             <Header/>
+
             <div>
                 <p>Welcome {currentUsername || "loading. . ."}!</p>
                 <br/>
@@ -104,14 +137,24 @@ export default function UserFeed(){
                 <br/>
                 <Link to="/my_followees">Who You Follow</Link>
                 <br/>
-                <Link to='/my_followers'>Your Followers</Link>
+                <Link to="/my_followers">Your Followers</Link>
                 <br/>
             </div>
 
             <div className="feed-posts">
                 {posts.length > 0 ? (
                     posts.map((post) => (
-                        <AudioPlayer key={post.id} post={post} />
+                        <AudioPlayer
+                            key={post.id}
+                            post={post}
+                            isActive={activePostId === post.id}
+                            onPlay={() => setActivePostId(post.id)}
+                            onOutOfFocus={() => {
+                                if (activePostId === post.id) {
+                                    setActivePostId(null);
+                                }
+                            }}
+                        />
                     ))
                 ) : (
                     <p>No posts to show yet.</p>
@@ -119,9 +162,11 @@ export default function UserFeed(){
             </div>
 
             {posts.length > 0 && hasMorePosts && (
-                <button onClick={fetchMorePosts} disabled={isLoadingMore}>
-                    {isLoadingMore ? "Loading..." : "Load more posts"}
-                </button>
+                <div ref={loadMoreRef}>
+                    <button onClick={fetchMorePosts} disabled={isLoadingMore}>
+                        {isLoadingMore ? "Loading..." : "Load more posts"}
+                    </button>
+                </div>
             )}
 
             {posts.length > 0 && !hasMorePosts && (
