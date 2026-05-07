@@ -10,6 +10,7 @@ import logo from './logo.svg';
 import './styles/App.css';
 import Login from './pages/Login';
 import UserFeed from './pages/UserFeed';
+import UserProfile from './pages/UserProfile';
 import NewPost from './pages/NewPost';
 import AudioPlayer from './components/AudioPlayer';
 import Header from './components/Header';
@@ -30,6 +31,7 @@ function App() {
         <Route path="/my_followees" element={<MyFollowees/>}/>
         <Route path="/my_followers" element={<MyFollowers/>}/>
         <Route path ="*" element={<Navigate to="/" replace/>}/>
+        <Route path="/profile/:userId" element={<UserProfile />} />
       </Routes>
   )
 }

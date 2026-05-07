@@ -46,7 +46,9 @@ export default function MyFollowees(){
         <h1>People I Follow:</h1>
         {followees.map(f => (
             <li key={f.followee_id} className="followee-row">
-            <span className="followee-name">{f.followee_name}</span>
+            <Link to={`/profile/${f.followee_id}`} className="followee-name">
+                {f.followee_name}
+            </Link>
             <span className="followee-date">
                 {new Date(f.created_at).toLocaleString()}
             </span>

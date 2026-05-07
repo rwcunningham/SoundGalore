@@ -175,6 +175,7 @@ def upload_media():
         "files:",
         list(request.files.keys()),
     )
+    print("UPLOAD USER:", current_user.username, current_user.id)
 
     audio_file = request.files.get("audioFile")
     image_file = request.files.get("imageFile")
@@ -310,6 +311,80 @@ def list_media():
         ]
     ), 200
 
+@app.route("/api/user_profile", methods=["GET"])
+@login_required
+def api_user_profile():
+    cache_size = 20
+    before_ts = request.args.get("before")
+    before_dt = datetime.fromisoformat(before_ts) if before_ts else None
+
+    posts_query = (
+        Post.query
+        .filter(
+            Post.user_id == current_user.id,
+            Post.is_deleted.is_(False),
+        )
+    )
+
+    if before_dt is not None:
+        posts_query = posts_query.filter(Post.created_at < before_dt)
+
+    posts = (
+        posts_query
+        .order_by(Post.created_at.desc())
+        .limit(cache_size)
+        .options(
+            db.selectinload(Post.image),
+            db.selectinload(Post.audio),
+            db.selectinload(Post.author),
+        )
+        .all()
+    )
+
+    return jsonify([post.to_dict() for post in posts]), 200
+
+@app.route("/api/user_profile/<user_id>", methods=["GET"])
+@login_required
+def api_user_profile_by_id(user_id):
+    cache_size = 20
+    before_ts = request.args.get("before")
+    before_dt = datetime.fromisoformat(before_ts) if before_ts else None
+
+    profile_user = db.session.get(User, user_id)
+
+    if profile_user is None:
+        return jsonify({"error": "user not found"}), 404
+
+    posts_query = (
+        Post.query
+        .filter(
+            Post.user_id == user_id,
+            Post.is_deleted.is_(False),
+        )
+    )
+
+    if before_dt is not None:
+        posts_query = posts_query.filter(Post.created_at < before_dt)
+
+    posts = (
+        posts_query
+        .order_by(Post.created_at.desc())
+        .limit(cache_size)
+        .options(
+            db.selectinload(Post.image),
+            db.selectinload(Post.audio),
+            db.selectinload(Post.author),
+        )
+        .all()
+    )
+
+    return jsonify({
+        "user": {
+            "id": profile_user.id,
+            "username": profile_user.username,
+        },
+        "posts": [post.to_dict() for post in posts],
+    }), 200
 
 @app.route("/api/feed", methods=["GET"])
 @login_required

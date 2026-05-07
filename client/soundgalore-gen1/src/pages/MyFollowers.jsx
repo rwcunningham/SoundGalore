@@ -46,7 +46,9 @@ export default function MyFollowers(){
         <h1>My Followers:</h1>
         {followers.map(f => (
             <li key={f.follower_id} className="follower-row">
-            <span className="follower-name">{f.follower_name}</span>
+            <Link to={`/profile/${f.follower_id}`} className="follower-name">
+                {f.follower_name}
+            </Link>
             <span className="follower-date">
                 {new Date(f.created_at).toLocaleString()}
             </span>
