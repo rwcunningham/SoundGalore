@@ -2,6 +2,7 @@ import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
 import {Link} from "react-router-dom";
+import LikeAndCommentBox from "../components/LikeAndCommentBox";
 
 const PAGE_SIZE = 20;
 
@@ -144,18 +145,20 @@ export default function UserFeed(){
             <div className="feed-posts">
                 {posts.length > 0 ? (
                     posts.map((post) => (
-                        <AudioPlayer
-                            key={post.id}
-                            post={post}
-                            isActive={activePostId === post.id}
-                            onPlay={() => setActivePostId(post.id)}
-                            onOutOfFocus={() => {
-                                if (activePostId === post.id) {
-                                    setActivePostId(null);
-                                }
-                            }}
-                        />
-                    ))
+                        <div className="feed-post" key={post.id}>
+                            <AudioPlayer
+                                post={post}
+                                isActive={activePostId === post.id}
+                                onPlay={() => setActivePostId(post.id)}
+                                onOutOfFocus={() => {
+                                    if (activePostId === post.id) {
+                                        setActivePostId(null);
+                                    }
+                                }}
+                            />
+                            <LikeAndCommentBox post={post}/>
+                        </div>
+))
                 ) : (
                     <p>No posts to show yet.</p>
                 )}

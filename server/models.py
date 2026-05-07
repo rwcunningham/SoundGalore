@@ -182,16 +182,26 @@ class Comment(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+    likes = db.relationship(
+        "Like", 
+        backref="comment", 
+        lazy="dynamic", 
+        cascade="all, delete-orphan")
 
 
 class Like(db.Model):
     __tablename__ = "likes"
 
-    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
-    post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
+    comment_id = db.Column(db.String(36), db.ForeignKey("comments.id"), nullable=True, index=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # Composite PK makes existence checks O(1) and naturally prevents duplicates.
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "post_id", name="uq_user_post_like"),
+        db.UniqueConstraint("user_id", "comment_id", name="uq_user_comment_like"),
+    )
 
 
 class Follow(db.Model):

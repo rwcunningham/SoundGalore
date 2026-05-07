@@ -1,7 +1,6 @@
 # server/hard_reset_db.py
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from sqlalchemy import inspect
 from app import app, db
@@ -14,13 +13,14 @@ def _sqlite_path_from_uri(uri: str) -> Path | None:
     # Supports sqlite:///relative.db and sqlite:////absolute/path.db
     if not uri.startswith("sqlite:///"):
         return None
-    # Strip scheme
+
     path_part = uri.replace("sqlite:///", "", 1)
     return Path(path_part)
 
 
 with app.app_context():
     print("Instance path:", app.instance_path)
+
     uri = app.config["SQLALCHEMY_DATABASE_URI"]
     print("SQLALCHEMY_DATABASE_URI:", uri)
 
@@ -29,6 +29,7 @@ with app.app_context():
         db.session.remove()
     except Exception as e:
         print("Warn: db.session.remove() failed:", repr(e))
+
     try:
         db.engine.dispose()
     except Exception as e:
@@ -38,37 +39,33 @@ with app.app_context():
 
     # 2) If SQLite, delete the file for a true hard reset
     if db_path is not None:
-        # If the path is relative, anchor it to the Flask instance folder for clarity
         if not db_path.is_absolute():
             db_path = Path(app.instance_path) / db_path
 
-        db_dir = db_path.parent
         print("Resolved SQLite file:", db_path)
 
-        # Ensure parent directory exists
-        db_dir.mkdir(parents=True, exist_ok=True)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Delete the DB file if present
         if db_path.exists():
-            print("Deleting existing DB file …")
-            try:
-                db_path.unlink()
-            except PermissionError as e:
-                print("PermissionError deleting DB (is something holding it open?):", e)
-                raise
+            print("Deleting existing DB file...")
+            db_path.unlink()
+        else:
+            print("No existing DB file found.")
 
     else:
-        # Non-SQLite: fall back to metadata drop (safer than leaving stale schema)
+        # Non-SQLite fallback
         print("Non-SQLite database detected; using drop_all/create_all")
+
         try:
             db.drop_all()
             db.session.commit()
         except Exception as e:
             print("drop_all() failed:", repr(e))
             db.session.rollback()
+            raise
 
     # 3) Recreate schema
-    print("Creating schema …")
+    print("Creating schema...")
     db.create_all()
     db.session.commit()
 
@@ -77,7 +74,6 @@ with app.app_context():
     tables = insp.get_table_names()
     print("Tables:", tables)
 
-    # Only inspect columns if the table exists—avoids raising during early dev
     def show_cols(tbl: str):
         if tbl in tables:
             cols = [c["name"] for c in insp.get_columns(tbl)]
@@ -91,3 +87,22 @@ with app.app_context():
     show_cols("comments")
     show_cols("likes")
     show_cols("follows")
+
+    # 5) Specific sanity check for new comment-like capable likes table
+    if "likes" in tables:
+        like_cols = {c["name"] for c in insp.get_columns("likes")}
+
+        expected_like_cols = {
+            "id",
+            "user_id",
+            "post_id",
+            "comment_id",
+            "created_at",
+        }
+
+        missing_like_cols = expected_like_cols - like_cols
+
+        if missing_like_cols:
+            print("WARNING: likes table is missing columns:", missing_like_cols)
+        else:
+            print("likes table looks good for post likes and comment likes.")

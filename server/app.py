@@ -475,6 +475,148 @@ def logout():
     logout_user()
     return {"msg": "logged out"}, 200
 
+@app.get("/api/posts/<post_id>/comments")
+@login_required
+def get_post_comments(post_id):
+    post = db.session.get(Post, post_id)
+
+    if post is None:
+        return jsonify({"error": "post not found"}), 404
+
+    comments = (
+        Comment.query
+        .filter(Comment.post_id == post_id)
+        .order_by(Comment.created_at.desc())
+        .all()
+    )
+
+    post_like_count = Like.query.filter_by(post_id=post_id).count()
+    post_liked_by_current_user = (
+        Like.query
+        .filter_by(user_id=current_user.id, post_id=post_id)
+        .first()
+        is not None
+    )
+
+    return jsonify({
+        "post_like_count": post_like_count,
+        "post_liked_by_current_user": post_liked_by_current_user,
+        "comments": [comment_to_dict(comment) for comment in comments],
+    }), 200
+
+
+@app.post("/api/posts/<post_id>/comments")
+@login_required
+def create_comment(post_id):
+    post = db.session.get(Post, post_id)
+
+    if post is None:
+        return jsonify({"error": "post not found"}), 404
+
+    data = request.get_json(force=True)
+    body = data.get("body", "").strip()
+
+    if not body:
+        return jsonify({"error": "missing comment body"}), 400
+
+    comment = Comment(
+        post_id=post_id,
+        user_id=current_user.id,
+        body=body,
+    )
+
+    db.session.add(comment)
+    db.session.commit()
+
+    return jsonify(comment_to_dict(comment)), 201
+
+
+@app.post("/api/posts/<post_id>/like")
+@login_required
+def toggle_post_like(post_id):
+    post = db.session.get(Post, post_id)
+
+    if post is None:
+        return jsonify({"error": "post not found"}), 404
+
+    existing_like = Like.query.filter_by(
+        user_id=current_user.id,
+        post_id=post_id,
+    ).first()
+
+    if existing_like:
+        db.session.delete(existing_like)
+        liked = False
+    else:
+        db.session.add(Like(
+            user_id=current_user.id,
+            post_id=post_id,
+        ))
+        liked = True
+
+    db.session.commit()
+
+    like_count = Like.query.filter_by(post_id=post_id).count()
+
+    return jsonify({
+        "liked": liked,
+        "like_count": like_count,
+    }), 200
+
+
+@app.post("/api/comments/<comment_id>/like")
+@login_required
+def toggle_comment_like(comment_id):
+    comment = db.session.get(Comment, comment_id)
+
+    if comment is None:
+        return jsonify({"error": "comment not found"}), 404
+
+    existing_like = Like.query.filter_by(
+        user_id=current_user.id,
+        comment_id=comment_id,
+    ).first()
+
+    if existing_like:
+        db.session.delete(existing_like)
+        liked = False
+    else:
+        db.session.add(Like(
+            user_id=current_user.id,
+            comment_id=comment_id,
+        ))
+        liked = True
+
+    db.session.commit()
+
+    like_count = Like.query.filter_by(comment_id=comment_id).count()
+
+    return jsonify({
+        "liked": liked,
+        "like_count": like_count,
+    }), 200
+
+
+def comment_to_dict(comment):
+    like_count = Like.query.filter_by(comment_id=comment.id).count()
+    liked_by_current_user = (
+        Like.query
+        .filter_by(user_id=current_user.id, comment_id=comment.id)
+        .first()
+        is not None
+    )
+
+    return {
+        "id": comment.id,
+        "post_id": comment.post_id,
+        "user_id": comment.user_id,
+        "username": comment.author.username,
+        "body": comment.body,
+        "created_at": comment.created_at.isoformat(),
+        "like_count": like_count,
+        "liked_by_current_user": liked_by_current_user,
+    }
+
 
 @app.errorhandler(400)
 def handle_400(e):
