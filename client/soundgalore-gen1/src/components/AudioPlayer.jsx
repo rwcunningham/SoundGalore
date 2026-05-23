@@ -48,7 +48,19 @@ export default function AudioPlayer({post, isActive, onPlay, onOutOfFocus})
         }, [audioUrl]);
 
     useEffect(() => {
-        if (!isActive) {
+        const audioElem = audioRef.current;
+        if (!audioElem) return;
+
+        if (isActive) {
+            audioElem.play()
+                .then(() => {
+                    setIsPlaying(true);
+                })
+                .catch((err) => {
+                    console.warn("Audio play was interrupted:", err);
+                    setIsPlaying(false);
+                });
+        } else {
             resetAudio();
         }
     }, [isActive]);
@@ -58,8 +70,7 @@ export default function AudioPlayer({post, isActive, onPlay, onOutOfFocus})
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                if (!entry.isIntersecting) {
-                    resetAudio();
+                if (!entry.isIntersecting && isActive) {
                     onOutOfFocus();
                 }
             },
@@ -71,7 +82,7 @@ export default function AudioPlayer({post, isActive, onPlay, onOutOfFocus})
         observer.observe(playerRef.current);
 
         return () => observer.disconnect();
-    }, [onOutOfFocus]);
+    }, [isActive, onOutOfFocus]);
 
     // helper for formatting time on the screen
     const formatTime = (timeSecs) => {

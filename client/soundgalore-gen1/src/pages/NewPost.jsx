@@ -6,6 +6,7 @@ import {useState, useEffect} from 'react';
 import {useNavigate} from "react-router-dom";
 import AudioPicker from '../components/AudioPicker';
 import ImagePicker from '../components/ImagePicker';
+import {Link} from "react-router-dom";
 import Header from '../components/Header';
 
 export default function NewPost(){
@@ -123,7 +124,9 @@ export default function NewPost(){
                 
                 <button className="submit-newpost-button" type="submit">Submit...</button>
             </form>
+            <Link to="/UserFeed">Back to My Feed</Link>
             </main>
+            
         </>
     );
 }

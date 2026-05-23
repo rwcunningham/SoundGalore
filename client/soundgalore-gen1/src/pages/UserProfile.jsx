@@ -1,6 +1,7 @@
 import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
+import NavBar from "../components/NavBar"
 import {Link, useParams} from "react-router-dom";
 
 const PAGE_SIZE = 20;
@@ -15,6 +16,7 @@ export default function UserProfile(){
     const [activePostId, setActivePostId] = useState(null);
 
     const loadMoreRef = useRef(null);
+    const lastScrollYRef = useRef(window.scrollY);
 
     useEffect(() => {
         const fetchUserPosts = async () => {
@@ -117,6 +119,7 @@ export default function UserProfile(){
     return(
         <div className="UserProfile">
             <Header/>
+            <NavBar/>
 
             <div>
                 <h1>{currentUsername || "loading. . ."}</h1>
@@ -135,7 +138,23 @@ export default function UserProfile(){
                             onPlay={() => setActivePostId(post.id)}
                             onOutOfFocus={() => {
                                 if (activePostId === post.id) {
-                                    setActivePostId(null);
+                                    const currentIndex = posts.findIndex((p) => p.id === post.id);
+
+                                    const currentScrollY = window.scrollY;
+                                    const scrollingDown = currentScrollY > lastScrollYRef.current;
+                                    lastScrollYRef.current = currentScrollY;
+
+                                    const nextIndex = scrollingDown
+                                        ? currentIndex + 1
+                                        : currentIndex - 1;
+
+                                    const nextPost = posts[nextIndex];
+
+                                    if (nextPost) {
+                                        setActivePostId(nextPost.id);
+                                    } else {
+                                        setActivePostId(null);
+                                    }
                                 }
                             }}
                         />

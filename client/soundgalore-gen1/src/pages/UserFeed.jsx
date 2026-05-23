@@ -13,6 +13,7 @@ export default function UserFeed(){
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMorePosts, setHasMorePosts] = useState(true);
     const [activePostId, setActivePostId] = useState(null);
+    const lastScrollYRef = useRef(window.scrollY);
 
     const loadMoreRef = useRef(null);
 
@@ -143,7 +144,23 @@ export default function UserFeed(){
                                 onPlay={() => setActivePostId(post.id)}
                                 onOutOfFocus={() => {
                                     if (activePostId === post.id) {
-                                        setActivePostId(null);
+                                        const currentIndex = posts.findIndex((p) => p.id === post.id);
+
+                                        const currentScrollY = window.scrollY;
+                                        const scrollingDown = currentScrollY > lastScrollYRef.current;
+                                        lastScrollYRef.current = currentScrollY;
+
+                                        const nextIndex = scrollingDown
+                                            ? currentIndex + 1
+                                            : currentIndex - 1;
+
+                                        const nextPost = posts[nextIndex];
+
+                                        if (nextPost) {
+                                            setActivePostId(nextPost.id);
+                                        } else {
+                                            setActivePostId(null);
+                                        }
                                     }
                                 }}
                             />
