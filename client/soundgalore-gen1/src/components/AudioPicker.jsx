@@ -1,28 +1,71 @@
-import React, {useState, useRef} from 'react';
-// import {useNavigate} from "react-router-dom";
+import React, { useRef } from 'react';
 
-export default function AudioPicker({onSelect}){
+function getAudioDuration(file) {
+    return new Promise((resolve, reject) => {
+        const audio = document.createElement('audio');
+        const url = URL.createObjectURL(file);
+
+        audio.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+            resolve(audio.duration);
+        };
+
+        audio.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Could not read audio metadata."));
+        };
+
+        audio.src = url;
+    });
+}
+
+export default function AudioPicker({ onSelect, maxDurationSeconds = 180, onWarning }) {
     const audioInputRef = useRef(null);
-    // const navigate = useNavigate;
 
     const triggerPicker = () => {
-        // if (!audioInputRef.current) return;
         audioInputRef.current?.click();
-    }; // if there is a file there, then trigger a click() to open the file picker
-    
-    const handleChange = (e) => {
+    };
+
+    const handleChange = async (e) => {
         const file = e.target.files?.[0] || null;
-        onSelect?.(file);
+
+        if (!file) {
+            onSelect?.(null);
+            return;
+        }
+
+        try {
+            const duration = await getAudioDuration(file);
+
+            if (duration > maxDurationSeconds) {
+                onWarning?.(`Audio clips must be ${Math.floor(maxDurationSeconds / 60)} minutes or shorter.`);
+                onSelect?.(null);
+                e.target.value = "";
+                return;
+            }
+
+            onSelect?.(file);
+        } catch (err) {
+            console.error(err);
+            onWarning?.("Could not check the audio length.");
+            onSelect?.(null);
+        }
     };
 
     return (
-        <>
-            <div>
-                <button type="button" onClick={triggerPicker}>Browse Audio... </button>
-                {/*if you send a "click" event to an input element of type "file", the Browser/OS should automatically open the file picker*/} 
-                {/*accept= allows you to pattern match the MIME for the file*/} 
-                <input type="file" name='audio-input' accept='audio/*' ref={audioInputRef} onChange={handleChange}  hidden />  
-            </div>
-        </>
+        <div>
+            <button type="button" onClick={triggerPicker}>
+                Browse Audio...
+            </button>
+
+            <input
+                type="file"
+                name="audio-input"
+                accept="audio/*"
+                ref={audioInputRef}
+                onChange={handleChange}
+                hidden
+            />
+        </div>
     );
 }
