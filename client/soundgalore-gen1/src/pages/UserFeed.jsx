@@ -1,6 +1,7 @@
 import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
+import NavBar from "../components/NavBar"
 import {Link} from "react-router-dom";
 import LikeAndCommentBox from "../components/LikeAndCommentBox";
 
@@ -130,17 +131,7 @@ export default function UserFeed(){
     return(
         <div className="UserFeed">
             <Header/>
-
-            <div>
-                <p>Welcome {currentUsername || "loading. . ."}!</p>
-                <br/>
-                <Link to="/newpost">Upload a new post here</Link>
-                <br/>
-                <Link to="/my_followees">Who You Follow</Link>
-                <br/>
-                <Link to="/my_followers">Your Followers</Link>
-                <br/>
-            </div>
+            <NavBar/>
 
             <div className="feed-posts">
                 {posts.length > 0 ? (
