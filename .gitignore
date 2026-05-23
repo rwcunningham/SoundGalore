@@ -1,2 +1,6 @@
 venv/
 .venv/
+public/audio/*
+!public/audio/.gitkeep
+public/images/*
+!public/images/.gitkeep
