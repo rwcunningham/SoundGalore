@@ -1,6 +1,6 @@
 venv/
 .venv/
-public/audio/*
-!public/audio/.gitkeep
-public/images/*
-!public/images/.gitkeep
+client/soundgalore-gen1/public/audio/*
+!client/soundgalore-gen1/public/audio/.gitkeep
+client/soundgalore-gen1/public/images/*
+!client/soundgalore-gen1/public/images/.gitkeep
