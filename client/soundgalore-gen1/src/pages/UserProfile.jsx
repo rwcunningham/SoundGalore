@@ -18,6 +18,9 @@ export default function UserProfile(){
     const loadMoreRef = useRef(null);
     const lastScrollYRef = useRef(window.scrollY);
 
+    const feedPostsRef = useRef(null);
+    const isSnappingRef = useRef(false);
+
     useEffect(() => {
         const fetchUserPosts = async () => {
             try {
@@ -119,45 +122,81 @@ export default function UserProfile(){
     return(
         <div className="UserProfile">
             <Header/>
-            <NavBar/>
 
             <div>
                 <h1>{currentUsername || "loading. . ."}</h1>
-                <br/>
-                <Link to="/UserFeed">Back to Feed</Link>
-                <br/>
             </div>
 
-            <div className="feed-posts">
+            <div
+                className="feed-posts"
+                ref={feedPostsRef}
+                onWheel={(e) => {
+                    e.preventDefault();
+
+                    if (isSnappingRef.current) return;
+
+                    const direction = e.deltaY > 0 ? 1 : -1;
+                    const postCards = Array.from(
+                        feedPostsRef.current.querySelectorAll(".feed-post")
+                    );
+
+                    const currentIndex = postCards.findIndex((card) => {
+                        const rect = card.getBoundingClientRect();
+
+                        return (
+                            rect.top <= window.innerHeight / 2 &&
+                            rect.bottom >= window.innerHeight / 2
+                        );
+                    });
+
+                    const nextCard = postCards[currentIndex + direction];
+
+                    if (nextCard) {
+                        isSnappingRef.current = true;
+
+                        nextCard.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                        });
+
+                        setTimeout(() => {
+                            isSnappingRef.current = false;
+                        }, 450);
+                    }
+                }}
+            >
                 {posts.length > 0 ? (
                     posts.map((post) => (
-                        <AudioPlayer
-                            key={post.id}
-                            post={post}
-                            isActive={activePostId === post.id}
-                            onPlay={() => setActivePostId(post.id)}
-                            onOutOfFocus={() => {
-                                if (activePostId === post.id) {
-                                    const currentIndex = posts.findIndex((p) => p.id === post.id);
+                        <div className="feed-post" key={post.id}>
+                            <div className="feed-post-card">
+                                <AudioPlayer
+                                    post={post}
+                                    isActive={activePostId === post.id}
+                                    onPlay={() => setActivePostId(post.id)}
+                                    onOutOfFocus={() => {
+                                        if (activePostId === post.id) {
+                                            const currentIndex = posts.findIndex((p) => p.id === post.id);
 
-                                    const currentScrollY = window.scrollY;
-                                    const scrollingDown = currentScrollY > lastScrollYRef.current;
-                                    lastScrollYRef.current = currentScrollY;
+                                            const currentScrollY = window.scrollY;
+                                            const scrollingDown = currentScrollY > lastScrollYRef.current;
+                                            lastScrollYRef.current = currentScrollY;
 
-                                    const nextIndex = scrollingDown
-                                        ? currentIndex + 1
-                                        : currentIndex - 1;
+                                            const nextIndex = scrollingDown
+                                                ? currentIndex + 1
+                                                : currentIndex - 1;
 
-                                    const nextPost = posts[nextIndex];
+                                            const nextPost = posts[nextIndex];
 
-                                    if (nextPost) {
-                                        setActivePostId(nextPost.id);
-                                    } else {
-                                        setActivePostId(null);
-                                    }
-                                }
-                            }}
-                        />
+                                            if (nextPost) {
+                                                setActivePostId(nextPost.id);
+                                            } else {
+                                                setActivePostId(null);
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
                     ))
                 ) : (
                     <p>No posts to show yet.</p>

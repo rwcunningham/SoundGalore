@@ -31,9 +31,9 @@ export default function NavBar(){
             <br/>
             <Link to="/my_followers">Your Followers</Link>
             <br/>
-            <Link to={`/profile/${currentUser.current_user_id}`} className="follower-name">
-                My Profile! ({currentUser.current_user_username})
-            </Link>
+            <Link to={`/profile/${currentUser.current_user_id}`} className="follower-name">My Profile! ({currentUser.current_user_username})</Link>
+            <br/>
+            <Link to="/UserFeed">Back to Feed</Link>
             <br/>
         </div>
     )

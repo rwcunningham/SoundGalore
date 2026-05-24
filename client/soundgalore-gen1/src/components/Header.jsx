@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NavBar from "./NavBar";
 
 export default function Header() {
     const navigate = useNavigate();
+    const [isNavOpen, setIsNavOpen] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -21,19 +24,33 @@ export default function Header() {
     };
 
     return (
-        <header className="Header">
-            <a
-                className="App-link"
-                href="https://rwcunningham.github.io/"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                SoundGalore
-            </a>
+        <>
+            <header className="Header">
+                <a
+                    className="App-link"
+                    href="https://rwcunningham.github.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    SoundGalore
+                </a>
 
-            <button onClick={handleLogout}>
-                Log Off
-            </button>
-        </header>
+                <button
+                    className="hamburger-button"
+                    onClick={() => setIsNavOpen(prev => !prev)}
+                    aria-label="Toggle navigation menu"
+                >
+                    ☰
+                </button>
+
+                <button onClick={handleLogout}>
+                    Log Off
+                </button>
+            </header>
+
+            <div className={`nav-slide-down ${isNavOpen ? "open" : ""}`}>
+                <NavBar />
+            </div>
+        </>
     );
 }
