@@ -1,4 +1,5 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
+import CommentBody from "../components/CommentBody";
 
 export default function LikeAndCommentBox({post}){
     const [postLiked, setPostLiked] = useState(false);
@@ -8,6 +9,14 @@ export default function LikeAndCommentBox({post}){
     const [commentText, setCommentText] = useState("");
     const [expandedComments, setExpandedComments] = useState(false);
     const [error, setError] = useState("");
+
+    const sortedComments = [...comments].sort(
+        (a, b) => (b.like_count ?? 0) - (a.like_count ?? 0)
+    );
+
+    const visibleComments = expandedComments
+    ? sortedComments
+    : sortedComments.slice(0, 2);
 
     useEffect(() => {
         const fetchCommentsAndLikes = async () => {
@@ -116,7 +125,6 @@ export default function LikeAndCommentBox({post}){
         }
     };
 
-    const visibleComments = expandedComments ? comments : comments.slice(0, 2);
 
     return(
         <div className="LikeAndCommentBox">
@@ -146,23 +154,24 @@ export default function LikeAndCommentBox({post}){
 
             {error && <p className="comment-error">{error}</p>}
 
-            <div className="comments-list">
-                {visibleComments.map((comment) => (
-                    <div className="comment" key={comment.id}>
-                        <p>
-                            <strong>{comment.username}</strong>: {comment.body}
-                        </p>
+            <div className={expandedComments ? "comments-list expanded" : "comments-list collapsed"}>
+                {visibleComments.map((comment) => {
 
-                        <button type="button" onClick={() => handleCommentLike(comment.id)}>
-                            {comment.liked_by_current_user ? "♥" : "♡"} {comment.like_count}
-                        </button>
-                    </div>
-                ))}
+                    return (
+                        <div className="comment" key={comment.id}>
+                            <CommentBody comment={comment} />
+
+                            <button type="button" onClick={() => handleCommentLike(comment.id)}>
+                                {comment.liked_by_current_user ? "♥" : "♡"} {comment.like_count}
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
 
-            {comments.length > 2 && (
+            {comments.length > 0 && (
                 <button type="button" onClick={() => setExpandedComments((prev) => !prev)}>
-                    {expandedComments ? "Show fewer comments" : "Expand comments"}
+                    {expandedComments ? "Show fewer comments" : "See more comments"}
                 </button>
             )}
         </div>

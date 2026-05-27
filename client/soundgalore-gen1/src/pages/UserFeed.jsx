@@ -164,10 +164,6 @@ export default function UserFeed(){
 
                         const feedRect = feedPostsRef.current.getBoundingClientRect();
                         const cardRect = nextCard.getBoundingClientRect();
-                        const headerHeight = headerWrapRef.current?.getBoundingClientRect().height ?? 0;
-
-                        const visibleFeedHeight = feedPostsRef.current.clientHeight - headerHeight;
-
                         const targetTop =
                             feedPostsRef.current.scrollTop +
                             cardRect.top -

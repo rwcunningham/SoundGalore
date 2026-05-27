@@ -1,8 +1,8 @@
 import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
-import NavBar from "../components/NavBar"
-import {Link, useParams} from "react-router-dom";
+import LikeAndCommentBox from "../components/LikeAndCommentBox";
+import {useParams} from "react-router-dom";
 
 const PAGE_SIZE = 20;
 
@@ -16,8 +16,7 @@ export default function UserProfile(){
     const [activePostId, setActivePostId] = useState(null);
 
     const loadMoreRef = useRef(null);
-    const lastScrollYRef = useRef(window.scrollY);
-
+    const lastScrollTopRef = useRef(0);
     const feedPostsRef = useRef(null);
     const isSnappingRef = useRef(false);
 
@@ -38,7 +37,6 @@ export default function UserProfile(){
                 setCurrentUsername(data.user.username);
                 setPosts(data.posts);
                 setHasMorePosts(data.posts.length >= PAGE_SIZE);
-
             } catch (err) {
                 console.error("Failed to fetch user posts: ", err);
             }
@@ -88,7 +86,6 @@ export default function UserProfile(){
             if (data.posts.length < PAGE_SIZE){
                 setHasMorePosts(false);
             }
-
         } catch (err) {
             console.error("Failed to fetch more user posts: ", err);
         } finally {
@@ -97,7 +94,7 @@ export default function UserProfile(){
     }, [isLoadingMore, hasMorePosts, posts, userId]);
 
     useEffect(() => {
-        if (!loadMoreRef.current) return;
+        if (!loadMoreRef.current || !feedPostsRef.current) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -108,7 +105,7 @@ export default function UserProfile(){
                 }
             },
             {
-                root: null,
+                root: feedPostsRef.current,
                 rootMargin: "400px",
                 threshold: 0,
             }
@@ -118,6 +115,51 @@ export default function UserProfile(){
 
         return () => observer.disconnect();
     }, [fetchMorePosts]);
+
+    const snapToNextPost = (direction) => {
+        if (!feedPostsRef.current || isSnappingRef.current) return;
+
+        const postCards = Array.from(
+            feedPostsRef.current.querySelectorAll(".feed-post")
+        );
+
+        const feedRect = feedPostsRef.current.getBoundingClientRect();
+        const feedCenterY = feedRect.top + feedRect.height / 2;
+
+        const currentIndex = postCards.findIndex((card) => {
+            const rect = card.getBoundingClientRect();
+
+            return (
+                rect.top <= feedCenterY &&
+                rect.bottom >= feedCenterY
+            );
+        });
+
+        if (currentIndex === -1) return;
+
+        const nextCard = postCards[currentIndex + direction];
+
+        if (!nextCard) return;
+
+        isSnappingRef.current = true;
+
+        const cardRect = nextCard.getBoundingClientRect();
+
+        const targetTop =
+            feedPostsRef.current.scrollTop +
+            cardRect.top -
+            feedRect.top -
+            (feedPostsRef.current.clientHeight - nextCard.clientHeight) / 2;
+
+        feedPostsRef.current.scrollTo({
+            top: targetTop,
+            behavior: "smooth",
+        });
+
+        setTimeout(() => {
+            isSnappingRef.current = false;
+        }, 500);
+    };
 
     return(
         <div className="UserProfile">
@@ -133,36 +175,8 @@ export default function UserProfile(){
                 onWheel={(e) => {
                     e.preventDefault();
 
-                    if (isSnappingRef.current) return;
-
                     const direction = e.deltaY > 0 ? 1 : -1;
-                    const postCards = Array.from(
-                        feedPostsRef.current.querySelectorAll(".feed-post")
-                    );
-
-                    const currentIndex = postCards.findIndex((card) => {
-                        const rect = card.getBoundingClientRect();
-
-                        return (
-                            rect.top <= window.innerHeight / 2 &&
-                            rect.bottom >= window.innerHeight / 2
-                        );
-                    });
-
-                    const nextCard = postCards[currentIndex + direction];
-
-                    if (nextCard) {
-                        isSnappingRef.current = true;
-
-                        nextCard.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start",
-                        });
-
-                        setTimeout(() => {
-                            isSnappingRef.current = false;
-                        }, 450);
-                    }
+                    snapToNextPost(direction);
                 }}
             >
                 {posts.length > 0 ? (
@@ -174,12 +188,12 @@ export default function UserProfile(){
                                     isActive={activePostId === post.id}
                                     onPlay={() => setActivePostId(post.id)}
                                     onOutOfFocus={() => {
-                                        if (activePostId === post.id) {
+                                        if (activePostId === post.id && feedPostsRef.current) {
                                             const currentIndex = posts.findIndex((p) => p.id === post.id);
 
-                                            const currentScrollY = window.scrollY;
-                                            const scrollingDown = currentScrollY > lastScrollYRef.current;
-                                            lastScrollYRef.current = currentScrollY;
+                                            const currentScrollTop = feedPostsRef.current.scrollTop;
+                                            const scrollingDown = currentScrollTop > lastScrollTopRef.current;
+                                            lastScrollTopRef.current = currentScrollTop;
 
                                             const nextIndex = scrollingDown
                                                 ? currentIndex + 1
@@ -195,25 +209,27 @@ export default function UserProfile(){
                                         }
                                     }}
                                 />
+
+                                <LikeAndCommentBox post={post}/>
                             </div>
                         </div>
                     ))
                 ) : (
                     <p>No posts to show yet.</p>
                 )}
+
+                {posts.length > 0 && hasMorePosts && (
+                    <div className="load-more-posts" ref={loadMoreRef}>
+                        <button onClick={fetchMorePosts} disabled={isLoadingMore}>
+                            {isLoadingMore ? "Loading..." : "Load more posts"}
+                        </button>
+                    </div>
+                )}
+
+                {posts.length > 0 && !hasMorePosts && (
+                    <p className="no-more-posts">No more posts to show.</p>
+                )}
             </div>
-
-            {posts.length > 0 && hasMorePosts && (
-                <div ref={loadMoreRef}>
-                    <button onClick={fetchMorePosts} disabled={isLoadingMore}>
-                        {isLoadingMore ? "Loading..." : "Load more posts"}
-                    </button>
-                </div>
-            )}
-
-            {posts.length > 0 && !hasMorePosts && (
-                <p>No more posts to show.</p>
-            )}
         </div>
     );
 }

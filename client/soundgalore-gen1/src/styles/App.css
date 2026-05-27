@@ -2,9 +2,114 @@
   text-align: center;
 }
 
+:root {
+  --header-height: 96px;
+  --card-width: 420px;
+}
+
+/* Global baseline */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: #111827;
+  color: #f9fafb;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Header */
+
+.Header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  padding: 0 1rem;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(17, 24, 39, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.Header .App-link {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  color: #f9fafb;
+}
+
+.hamburger-button {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: #f9fafb;
+}
+
+.nav-slide-down {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+
+  padding: 5rem 1.5rem 1.5rem;
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  background: rgba(17, 24, 39, 0.88);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.nav-slide-down.open {
+  transform: translateY(0);
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+/* Old CRA logo styles */
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 10vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  font-size: calc(10px + 2vmin);
+  color: white;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -13,278 +118,536 @@
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 10vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.Header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.hamburger-button {
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.nav-slide-down {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-
-    transform: translateY(-100%);
-    transition: transform 0.3s ease;
-
-    padding: 5rem 1.5rem 1.5rem;
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.75);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-}
-
-.nav-slide-down.open {
-    transform: translateY(0);
-}
-
-.App-link {
-  color: #61dafb;
-}
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
-/*Header*/
-  .Header .App-link{
-  font-family: 'Nunito Sans', 'Segoe UI', Roboto, sans-serif;
-  font-size: 150%;
-  text-decoration: none;
-}
 
+/* Login page */
 
-/* login page */
- .login-page{
+.login-page {
   min-height: 100vh;
+
   display: grid;
   place-items: start center;
+
   padding: 3rem 1rem;
+
   background:
-    linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
-    url('../../public/images/website_images/frutiger-aero-1.webp');
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("../../public/images/website_images/frutiger-aero-1.webp");
+
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  }
+}
 
- .login-card{
-  width: 50%;
-  max-width: 420px;
-  background: #3c8982;
-  opacity: 0.92;
+.login-card {
+  width: min(90vw, 420px);
+
+  background: rgba(60, 137, 130, 0.92);
+
   border: 1px solid #fb61e1;
-  border-radius: 6px;
+  border-radius: 1rem;
+
   padding: 1.5rem;
-  /*center the content*/
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /*min-height: 300px;*/
- }
 
- .field{
-  box-sizing: border-box;
- }
-
-input[type="text"],
-input[type="password"]{
-  width: 75%;
-  box-sizing: border-box;
-  
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
-/*User Feed Page*/
+.field {
+  box-sizing: border-box;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 75%;
+  box-sizing: border-box;
+}
+
+/* User Feed / User Profile */
 
 .UserFeed,
 .UserProfile {
   height: 100svh;
   overflow: hidden;
+
   display: flex;
   flex-direction: column;
+
+  background:
+    radial-gradient(circle at top, rgba(45, 212, 191, 0.18), transparent 32rem),
+    linear-gradient(180deg, #111827 0%, #020617 100%);
 }
+
+.UserFeed h1,
+.UserProfile h1 {
+  height: 40px;
+
+  margin: 0;
+  padding: 0.45rem 1rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+
+  color: rgba(249, 250, 251, 0.82);
+}
+
+.load-more-posts,
+.no-more-posts {
+  min-height: calc(100svh - var(--header-height));
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  scroll-snap-align: center;
+}
+
+.load-more-posts button {
+  border: none;
+  border-radius: 999px;
+
+  padding: 0.7rem 1rem;
+
+  font-weight: 700;
+
+  background: rgba(255, 255, 255, 0.16);
+  color: #f9fafb;
+}
+
+.load-more-posts button:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* One true scroll container */
 
 .feed-posts {
   flex: 1;
   min-height: 0;
   width: 100%;
+
   overflow-y: auto;
+  overflow-x: hidden;
 
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
+
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
-.feed-post {
-  height: 100%;
-  width: min(92vw, 520px);
-  margin: 0 auto;
+/* One full-screen snap slot per post */
 
-  scroll-snap-align: start;
+.feed-post {
+  min-height: calc(100svh - var(--header-height));
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1.25rem 0;
+
+  scroll-snap-align: center;
   scroll-snap-stop: always;
 
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   box-sizing: border-box;
-  padding-bottom: 1rem;
 }
 
+/* Card sits inside the snap slot */
+
 .feed-post-card {
-  flex: 1;
-  margin: 0.75rem 0;
-  border-radius: 32px;
-  padding: 1rem;
+  width: min(92vw, var(--card-width));
+  height: calc(100svh - var(--header-height) - 2.5rem);
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
 
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  gap: 0.6rem;
+
+  padding: 1rem;
+
+  overflow: hidden;
+
+  border-radius: 1.75rem;
+
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
 }
 
-/*Audio Player*/
-  .AudioPlayer{
-    /*min-height: 100vh;*/
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    box-sizing: border-box;
-    padding: 1.5rem;
-    gap: 0.75rem;
-  }
-  .AudioPlayer .play-pause-button{
-    cursor: pointer; 
-    font: 600 0.95rem/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    padding: 0.8rem 1.15rem;
-    border-radius:30px;
-    color: #090008;
-    background-color: var(--ap-accent, #18c16f);              /* solid fallback */
-    background-image: linear-gradient(180deg,
-                      var(--ap-accent, #a8acac) 0%,
-                      var(--ap-accent-strong, #08adbc) 100%);
-  }
-
-  .AudioPlayer .play-pause-button:active{
-    transform: translateY(0);
-    filter: brightness(0.98);
-  }
-
-  .AudioPlayer .current-time{
-    font: 600 0.95rem/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    padding: 0.01rem .4rem;
-    color:#126114;
-    background-image: linear-gradient(180deg,
-                      var(--ap-accent, #a8acac) 0%,
-                      var(--ap-accent-strong, #08adbc) 100%);
-  }
-
-  .NewPost{
-    min-height: 100vh;
-    display: grid;
-    place-items: start center;
-    background:
-    linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
-    url('../../public/images/website_images/frutiger-aero-1.webp');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  
-  .submit-newpost-button{
-    font: 600 0.95rem/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    
-  }
-
-.newpost-description {
-    font: 600 0.95rem/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    display: flex;
-    align-items: center;    /* vertical center */
-    justify-content: center;/* horizontal center */
+.feed-post-card > * {
+  margin-top: 0;
 }
 
-.square-container{
+/* Post text */
+
+.feed-post-card h2,
+.feed-post-card h3 {
+  margin: 0;
+
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+
+  color: #f9fafb;
+}
+
+.feed-post-card p {
+  margin: 0;
+
+  font-size: 0.92rem;
+  line-height: 1.35;
+
+  color: rgba(249, 250, 251, 0.82);
+}
+
+/* Media */
+
+.feed-post-card img {
+  width: 100%;
+  max-height: 205px;
+
+  object-fit: cover;
+
+  border-radius: 1rem;
+}
+
+audio {
+  width: 100%;
+}
+
+/* Like and comment box */
+
+.LikeAndCommentBox {
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.45rem;
+}
+
+.like-comment-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.like-comment-actions button,
+.see-more-comments-button,
+.LikeAndCommentBox > button,
+.comment button {
+  border: none;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.16);
+  color: #f9fafb;
+
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  padding: 0.42rem 0.7rem;
+}
+
+.like-comment-actions button:hover,
+.see-more-comments-button:hover,
+.LikeAndCommentBox > button:hover,
+.comment button:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* Comment form */
+
+.LikeAndCommentBox form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.LikeAndCommentBox textarea {
+  width: 100%;
+  min-height: 4rem;
+
+  resize: vertical;
+
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.9rem;
+
+  padding: 0.65rem;
+
+  font: inherit;
+  color: #f9fafb;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.LikeAndCommentBox textarea::placeholder {
+  color: rgba(249, 250, 251, 0.5);
+}
+
+.comment-error {
+  margin: 0;
+
+  color: #fecaca;
+  font-size: 0.85rem;
+}
+
+/* Comments */
+
+.comments-list {
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 0.25rem;
+  padding-bottom: 0.35rem;
+}
+
+.comments-list.collapsed {
+  overflow: visible;
+}
+
+.comments-list.expanded {
+  overflow-y: auto;
+}
+
+.comment {
+  margin-bottom: 0.65rem;
+
+  font-size: 0.88rem;
+  line-height: 1.3;
+
+  color: rgba(249, 250, 251, 0.82);
+}
+
+.comment-body {
+  margin-bottom: 0.2rem;
+}
+
+.comment-body.collapsed {
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+.comment-body.expanded {
+  display: block;
+}
+
+.comment-see-more {
+  display: inline-block;
+
+  margin-top: 0.15rem;
+  margin-bottom: 0.25rem;
+
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  color: rgba(125, 211, 252, 0.9);
+}
+
+.comment-see-more:hover {
+  background: transparent;
+  color: #e0f2fe;
+}
+
+.comment button {
+  margin-top: 0.15rem;
+  padding: 0.28rem 0.55rem;
+
+  font-size: 0.78rem;
+}
+
+.see-more-comments-button,
+.LikeAndCommentBox > button {
+  align-self: flex-start;
+  margin-top: 0.1rem;
+}
+
+/* Audio Player */
+
+.AudioPlayer {
+  display: flex;
+  flex-direction: column;
+
+  justify-content: flex-start;
+  align-items: center;
+
+  box-sizing: border-box;
+
+  padding: 0.45rem 0;
+  margin: 0;
+
+  gap: 0.5rem;
+}
+
+.AudioPlayer .play-pause-button {
+  cursor: pointer;
+
+  border: none;
+  border-radius: 999px;
+
+  font:
+    700 0.9rem/1
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+
+  padding: 0.72rem 1rem;
+
+  color: #06111f;
+
+  background-color: var(--ap-accent, #18c16f);
+  background-image:
+    linear-gradient(
+      180deg,
+      var(--ap-accent, #a8acac) 0%,
+      var(--ap-accent-strong, #08adbc) 100%
+    );
+}
+
+.AudioPlayer .play-pause-button:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.AudioPlayer .current-time {
+  border-radius: 999px;
+
+  font:
+    700 0.82rem/1
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+
+  padding: 0.12rem 0.45rem;
+
+  color: #06111f;
+
+  background-image:
+    linear-gradient(
+      180deg,
+      var(--ap-accent, #a8acac) 0%,
+      var(--ap-accent-strong, #08adbc) 100%
+    );
+}
+
+/* New Post */
+
+.NewPost {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: start center;
+
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("../../public/images/website_images/frutiger-aero-1.webp");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.submit-newpost-button {
+  font:
+    600 0.95rem/1
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+.newpost-description {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font:
+    600 0.95rem/1
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+.square-container {
   width: 75%;
   max-width: 400px;
   aspect-ratio: 1 / 1;
-  overflow:hidden;
+
+  overflow: hidden;
 }
 
-.followees-list {
-  list-style: none;
-  padding: 0;
-}
+/* Followers / followees */
 
-.followee-row {
-  display: flex;
-  justify-content: space-between; /* pushes name left, date right */
-  padding: 4px 0;
-  border-bottom: 1px solid #ddd;
-}
-
-.followee-name {
-  font-weight: bold;
-}
-
-.followee-date {
-  color: #555;
-  font-size: 0.9em;
-}
-
-
+.followees-list,
 .followers-list {
   list-style: none;
   padding: 0;
 }
 
+.followee-row,
 .follower-row {
   display: flex;
-  justify-content: space-between; /* pushes name left, date right */
+  justify-content: space-between;
+
   padding: 4px 0;
+
   border-bottom: 1px solid #ddd;
 }
 
+.followee-name,
 .follower-name {
   font-weight: bold;
 }
 
+.followee-date,
 .follower-date {
   color: #555;
   font-size: 0.9em;
