@@ -147,22 +147,18 @@ button {
   background-repeat: no-repeat;
 }
 
-.login-card {
-  width: min(90vw, 420px);
+.login-card form {
+  width: 100%;
+}
 
-  background: rgba(60, 137, 130, 0.92);
+.login-error {
+  color: #fecaca;
+  font-weight: 700;
+}
 
-  border: 1px solid #fb61e1;
-  border-radius: 1rem;
-
-  padding: 1.5rem;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+.login-card a {
+  color: #e0f2fe;
+  font-weight: 700;
 }
 
 .field {

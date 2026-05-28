@@ -21,6 +21,9 @@ from models import db, User, Post, Media, Comment, Like, Follow
 
 from uuid import uuid4
 
+import re
+from sqlalchemy.exc import IntegrityError
+
 load_dotenv()
 
 # ------------------------------------------------------------------------------------
@@ -408,31 +411,85 @@ def api_feed():
     return jsonify([post.to_dict() for post in posts]), 200
 
 
+USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]{3,30}$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def validate_new_user(username: str, email: str, password: str) -> str | None:
+    if not USERNAME_RE.fullmatch(username):
+        return "Username must be 3-30 characters and can only contain letters, numbers, and underscores."
+
+    if not EMAIL_RE.fullmatch(email):
+        return "Please enter a valid email address."
+
+    if len(password) < 8:
+        return "Password must be at least 8 characters long."
+
+    if len(password) > 72:
+        return "Password must be 72 characters or fewer."
+
+    if any(ch.isspace() for ch in password):
+        return "Password cannot contain spaces."
+
+    if not re.search(r"[A-Za-z]", password):
+        return "Password must contain at least one letter."
+
+    if not re.search(r"\d", password):
+        return "Password must contain at least one number."
+
+    return None
+
+
 @app.post("/api/users")
 def create_user():
     data = request.get_json(force=True)
 
-    required = ["username", "email", "password"]
-    missing = [field for field in required if not data.get(field)]
-    if missing:
-        return {"error": f"missing fields: {', '.join(missing)}"}, 400
+    username = data.get("username", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
 
-    user = User(username=data["username"], email=data["email"])
-    user.set_password(data["password"])
+    required = {
+        "username": username,
+        "email": email,
+        "password": password,
+    }
+
+    missing = [field for field, value in required.items() if not value]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+
+    validation_error = validate_new_user(username, email, password)
+    if validation_error:
+        return jsonify({"error": validation_error}), 400
+
+    existing_username = User.query.filter_by(username=username).first()
+    if existing_username:
+        return jsonify({"error": "That username is already taken."}), 409
+
+    existing_email = User.query.filter_by(email=email).first()
+    if existing_email:
+        return jsonify({"error": "That email is already in use."}), 409
+
+    user = User(username=username, email=email)
+    user.set_password(password)
 
     db.session.add(user)
+
     try:
         db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Username or email already exists."}), 409
     except Exception:
         db.session.rollback()
-        return {"error": "user already exists"}, 409
+        app.logger.exception("Create user failed")
+        return jsonify({"error": "Could not create user."}), 500
 
-    return {
+    return jsonify({
         "id": user.id,
         "username": user.username,
         "email": user.email,
-    }, 201
-
+    }), 201
 
 @app.post("/api/follows")
 @login_required

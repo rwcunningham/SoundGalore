@@ -2,6 +2,7 @@ import {useNavigate} from "react-router-dom";
 import React, {useState, useRef} from "react";
 import Header from "../components/Header";
 import "../styles/pages/Login.css";
+import {Link} from "react-router-dom";
 
 export default function Login(){
     const navigate = useNavigate();
@@ -53,6 +54,9 @@ export default function Login(){
     <>
         <main className="login-page">
             <Header/>
+            <p>
+                Need an account? <Link to="/create-account">Create one</Link>
+            </p>
             <section className="login-card">
                 <form onSubmit={handleSubmit}>
                     <div>
@@ -65,7 +69,7 @@ export default function Login(){
                     <div className="field">
                         <label htmlFor="username">
                             Username:
-                            <input type="text" autocomplete="username" id="username" name="username" onChange={handleChange} value={credentials.username} required/>
+                            <input type="text" autoComplete="username" id="username" name="username" onChange={handleChange} value={credentials.username} required/>
                         </label>
                     </div>
                         <br/>
