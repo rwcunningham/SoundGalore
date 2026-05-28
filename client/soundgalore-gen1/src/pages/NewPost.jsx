@@ -8,6 +8,8 @@ import AudioPicker from '../components/AudioPicker';
 import ImagePicker from '../components/ImagePicker';
 import {Link} from "react-router-dom";
 import Header from '../components/Header';
+import AudioRecorder from '../components/AudioRecorder';
+import CameraCapture from '../components/CameraCapture';
 
 export default function NewPost(){
     const[imageFile, setImageFile] = useState(null);
@@ -82,48 +84,88 @@ export default function NewPost(){
         <>
             <main className="NewPost">
                 <Header/>
-                <p className="newpost-description">Please Select an image and an audio file for your post</p>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <ImagePicker onSelect={handleImageSelect}/>
-                    <AudioPicker onSelect={handleAudioSelect}/>
-                </div>
-
-                <div className="newpost-selected-files">
-                    <p>
-                        Selected image: {imageFile ? imageFile.name : "No image selected"}
+                <section className="newpost-card">
+                    <p className="newpost-description">
+                        Select or create an image and audio file for your post.
                     </p>
 
-                    {imagePreviewUrl && (
-                        <img
-                            className="newpost-image-preview"
-                            src={imagePreviewUrl}
-                            alt={imageFile ? `Preview of ${imageFile.name}` : "Selected image preview"}
+                    <section className="newpost-media-section">
+                        <div className="newpost-section-header">Image</div>
+
+                        <div className="newpost-button-row">
+                            <ImagePicker onSelect={handleImageSelect}/>
+
+                            <CameraCapture
+                                onSelect={handleImageSelect}
+                                onWarning={(message) => console.warn(message)}
+                            />
+                        </div>
+                    </section>
+
+                    <section className="newpost-media-section">
+                        <div className="newpost-section-header">Audio</div>
+
+                        <div className="newpost-button-row">
+                            <AudioPicker onSelect={handleAudioSelect}/>
+                        </div>
+
+                        <AudioRecorder
+                            onSelect={handleAudioSelect}
+                            maxDurationSeconds={180}
+                            onWarning={(message) => console.warn(message)}
                         />
-                    )}
+                    </section>
 
-                    <p>
-                        Selected audio: {audioFile ? audioFile.name : "No audio selected"}
-                    </p>
-                </div>
+                    <div className="newpost-selected-files">
+                        <p>
+                            Selected image: {imageFile ? imageFile.name : "No image selected"}
+                        </p>
+
+                        {imagePreviewUrl && (
+                            <img
+                                className="newpost-image-preview"
+                                src={imagePreviewUrl}
+                                alt={imageFile ? `Preview of ${imageFile.name}` : "Selected image preview"}
+                            />
+                        )}
+
+                        <p>
+                            Selected audio: {audioFile ? audioFile.name : "No audio selected"}
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit}>
+                        <p className="newpost-title">Post title:</p>
+
+                        <input
+                            id="title"
+                            className="newpost-title"
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Give your post a title..."
+                            maxLength={200}
+                            required
+                        />
+
+                        <p className="newpost-description">Post Description</p>
+
+                        <textarea
+                            id="description"
+                            className="newpost-description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Say something about this post..."
+                            rows={4}
+                            maxLength={500}
+                        />
+
+                        <button className="submit-newpost-button" type="submit">
+                            Submit...
+                        </button>
+                    </form>
+                </section>
                 
-            <form onSubmit={handleSubmit}>
-                <p className="newpost-title">Post title:</p>
-                <input
-                        id="title"
-                        className="newpost-title"
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Give your post a title..."
-                        maxLength={200}
-                        required
-                    />
-                <p className="newpost-description">Post Description</p>
-                <textarea id="description" className="newpost-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Say something about this post..." rows={4} maxLength={500}/>
-                <br/>
-                
-                <button className="submit-newpost-button" type="submit">Submit...</button>
-            </form>
             <Link to="/UserFeed">Back to My Feed</Link>
             </main>
             

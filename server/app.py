@@ -19,6 +19,7 @@ from werkzeug.utils import secure_filename
 
 from models import db, User, Post, Media, Comment, Like, Follow
 
+from uuid import uuid4
 
 load_dotenv()
 
@@ -165,6 +166,16 @@ def my_followers():
     ]
     return jsonify(result), 200
 
+def make_unique_upload_filename(original_filename: str) -> str:
+    safe_name = secure_filename(original_filename)
+
+    stem = Path(safe_name).stem
+    suffix = Path(safe_name).suffix
+
+    if not stem:
+        stem = "upload"
+
+    return f"{stem}-{uuid4().hex}{suffix}"
 
 @app.route("/api/upload_media", methods=["POST"])
 @login_required
@@ -185,8 +196,8 @@ def upload_media():
     if not image_file:
         return jsonify({"error": "post to /api/upload_media was missing image file"}), 400
 
-    audio_filename = secure_filename(audio_file.filename)
-    image_filename = secure_filename(image_file.filename)
+    audio_filename = make_unique_upload_filename(audio_file.filename)
+    image_filename = make_unique_upload_filename(image_file.filename)
 
     audio_dest_path = os.path.join(app.config["UPLOAD_AUDIO_DIR"], audio_filename)
     image_dest_path = os.path.join(app.config["UPLOAD_IMAGE_DIR"], image_filename)

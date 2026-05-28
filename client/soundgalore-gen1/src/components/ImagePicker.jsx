@@ -28,7 +28,6 @@ async function resizeImageWithBars(file, maxWidth, maxHeight) {
 
     const ctx = canvas.getContext('2d');
 
-    // black background for letterboxing/pillarboxing
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, maxWidth, maxHeight);
 
@@ -42,12 +41,17 @@ async function resizeImageWithBars(file, maxWidth, maxHeight) {
 
     ctx.drawImage(img, x, y, drawWidth, drawHeight);
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         canvas.toBlob(
             (blob) => {
+                if (!blob) {
+                    reject(new Error("Could not convert image."));
+                    return;
+                }
+
                 const resizedFile = new File(
                     [blob],
-                    file.name.replace(/\.[^.]+$/, '.jpg'),
+                    file.name.replace(/\.[^.]+$/, '.jpg') || 'selected-image.jpg',
                     { type: 'image/jpeg' }
                 );
 
@@ -60,11 +64,7 @@ async function resizeImageWithBars(file, maxWidth, maxHeight) {
 }
 
 export default function ImagePicker({ onSelect, maxWidth = 800, maxHeight = 800 }) {
-    const photoInputRef = useRef(null);
-
-    const triggerPicker = () => {
-        photoInputRef.current?.click();
-    };
+    const browseInputRef = useRef(null);
 
     const handleChange = async (e) => {
         const file = e.target.files?.[0] || null;
@@ -80,12 +80,14 @@ export default function ImagePicker({ onSelect, maxWidth = 800, maxHeight = 800 
         } catch (err) {
             console.error(err);
             onSelect?.(null);
+        } finally {
+            e.target.value = "";
         }
     };
 
     return (
         <div>
-            <button type="button" onClick={triggerPicker}>
+            <button type="button" onClick={() => browseInputRef.current?.click()}>
                 Browse Image...
             </button>
 
@@ -93,10 +95,11 @@ export default function ImagePicker({ onSelect, maxWidth = 800, maxHeight = 800 
                 type="file"
                 name="photo-input"
                 accept="image/*"
-                ref={photoInputRef}
+                ref={browseInputRef}
                 onChange={handleChange}
                 hidden
             />
+
         </div>
     );
 }

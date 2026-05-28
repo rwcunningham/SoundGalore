@@ -624,6 +624,37 @@ audio {
   overflow: hidden;
 }
 
+/*Audio Recorder*/
+.audio-recorder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.audio-recorder button {
+    width: fit-content;
+}
+
+.audio-recorder-time {
+    margin: 0;
+}
+
+.audio-recorder-scrubber {
+    width: 100%;
+    max-width: 400px;
+}
+
+/*camera*/
+
+.camera-preview {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 1rem;
+  background: black;
+}
+
 /* Followers / followees */
 
 .followees-list,
