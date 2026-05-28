@@ -391,11 +391,18 @@ def api_user_profile_by_id(user_id):
         )
         .all()
     )
+    existing_follow = Follow.query.filter_by(
+        follower_id=current_user.id,
+        followee_id=profile_user.id,
+    ).first()
+
 
     return jsonify({
         "user": {
             "id": profile_user.id,
             "username": profile_user.username,
+            "is_current_user": profile_user.id == current_user.id,
+            "is_following": existing_follow is not None,
         },
         "posts": [post.to_dict() for post in posts],
     }), 200
@@ -498,7 +505,26 @@ def create_follow():
 
     followee_id = data.get("followee_id")
     if not followee_id:
-        return {"error": "missing followee_id"}, 400
+        return jsonify({"error": "missing followee_id"}), 400
+
+    if followee_id == current_user.id:
+        return jsonify({"error": "you cannot follow yourself"}), 400
+
+    followee = db.session.get(User, followee_id)
+    if followee is None:
+        return jsonify({"error": "user not found"}), 404
+
+    existing_follow = Follow.query.filter_by(
+        follower_id=current_user.id,
+        followee_id=followee_id,
+    ).first()
+
+    if existing_follow:
+        return jsonify({
+            "msg": "already following",
+            "follower_id": current_user.id,
+            "followee_id": followee_id,
+        }), 200
 
     follow = Follow(
         follower_id=current_user.id,
@@ -506,17 +532,19 @@ def create_follow():
     )
 
     db.session.add(follow)
+
     try:
         db.session.commit()
     except Exception:
         db.session.rollback()
-        return {"error": "the follow probably already exists"}, 409
+        app.logger.exception("Create follow failed")
+        return jsonify({"error": "could not follow user"}), 500
 
-    return {
+    return jsonify({
         "follower_id": follow.follower_id,
         "followee_id": follow.followee_id,
         "created_at": follow.created_at.isoformat(),
-    }, 201
+    }), 201
 
 
 @app.post("/auth/login")
@@ -695,6 +723,59 @@ def handle_400(e):
         pass
     return jsonify(error=str(e)), 400
 
+@app.get("/api/users/search")
+@login_required
+def search_users():
+    query = request.args.get("q", "").strip()
+
+    if not query:
+        return jsonify([]), 200
+
+    query_lower = query.lower()
+
+    matching_users = (
+        User.query
+        .filter(
+            User.id != current_user.id,
+            db.func.lower(User.username).contains(query_lower),
+        )
+        .limit(25)
+        .all()
+    )
+
+    matching_users.sort(
+        key=lambda user: (
+            user.username.lower() != query_lower,
+            not user.username.lower().startswith(query_lower),
+            len(user.username),
+            user.username.lower(),
+        )
+    )
+
+    matching_users = matching_users[:7]
+
+    followed_user_ids = set()
+
+    if matching_users:
+        following_rows = (
+            Follow.query
+            .filter(
+                Follow.follower_id == current_user.id,
+                Follow.followee_id.in_([user.id for user in matching_users]),
+            )
+            .all()
+        )
+
+        followed_user_ids = {row.followee_id for row in following_rows}
+
+    return jsonify([
+        {
+            "id": user.id,
+            "username": user.username,
+            "is_following": user.id in followed_user_ids,
+        }
+        for user in matching_users
+    ]), 200
 
 # ------------------------------------------------------------------------------------
 # Serve React build

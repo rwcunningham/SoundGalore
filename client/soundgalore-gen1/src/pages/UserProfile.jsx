@@ -9,11 +9,13 @@ const PAGE_SIZE = 20;
 export default function UserProfile(){
     const {userId} = useParams();
 
-    const [currentUsername, setCurrentUsername] = useState("");
+    const [profileUser, setProfileUser] = useState(null);
     const [posts, setPosts] = useState([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMorePosts, setHasMorePosts] = useState(true);
     const [activePostId, setActivePostId] = useState(null);
+
+    const [error, setError] = useState("");
 
     const loadMoreRef = useRef(null);
     const lastScrollTopRef = useRef(0);
@@ -34,7 +36,7 @@ export default function UserProfile(){
 
                 const data = await res.json();
 
-                setCurrentUsername(data.user.username);
+                setProfileUser(data.user);
                 setPosts(data.posts);
                 setHasMorePosts(data.posts.length >= PAGE_SIZE);
             } catch (err) {
@@ -43,7 +45,7 @@ export default function UserProfile(){
         };
 
         setPosts([]);
-        setCurrentUsername("");
+        setProfileUser(null);
         setHasMorePosts(true);
         setActivePostId(null);
 
@@ -161,12 +163,47 @@ export default function UserProfile(){
         }, 500);
     };
 
+    const handleFollow = async (targetUserId) => {
+        setError("");
+
+        try {
+            const res = await fetch("/api/follows", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ followee_id: targetUserId }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not follow user.");
+            }
+
+            setProfileUser((prev) =>
+                prev ? { ...prev, is_following: true } : prev
+            );
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     return(
         <div className="UserProfile">
             <Header/>
 
             <div>
-                <h1>{currentUsername || "loading. . ."}</h1>
+                <h1>{profileUser?.username || "loading. . ."}</h1>
+
+                {profileUser && !profileUser.is_current_user && (
+                    <button
+                        type="button"
+                        disabled={profileUser.is_following}
+                        onClick={() => handleFollow(profileUser.id)}
+                    >
+                        {profileUser.is_following ? "Following" : "Follow"}
+                    </button>
+                )}
             </div>
 
             <div

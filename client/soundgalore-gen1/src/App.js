@@ -19,6 +19,7 @@ import MyFollowers from './pages/MyFollowers'
 import {Routes, Route, Navigate} from 'react-router-dom';
 import NewPostSuccessful from './pages/NewPostSuccessful';
 import CreateAccount from "./pages/CreateAccount";
+import SearchUser from "./pages/SearchUser";
 
 
 
@@ -31,9 +32,11 @@ function App() {
         <Route path="/new_post_successful" element={<NewPostSuccessful/>}/>
         <Route path="/my_followees" element={<MyFollowees/>}/>
         <Route path="/my_followers" element={<MyFollowers/>}/>
-        <Route path ="*" element={<Navigate to="/" replace/>}/>
         <Route path="/profile/:userId" element={<UserProfile />} />
         <Route path="/create-account" element={<CreateAccount />} />
+        <Route path="/search-user" element={<SearchUser />} />
+
+        <Route path ="*" element={<Navigate to="/" replace/>}/>
       </Routes>
   )
 }

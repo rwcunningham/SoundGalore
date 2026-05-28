@@ -1,0 +1,103 @@
+.SearchUser {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: start center;
+
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("../../../public/images/website_images/frutiger-aero-1.webp");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.search-user-card {
+  width: min(90vw, 520px);
+  margin-top: 3rem;
+
+  background: rgba(60, 137, 130, 0.92);
+
+  border: 1px solid #fb61e1;
+  border-radius: 1rem;
+
+  padding: 1.5rem;
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.search-user-form {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.search-user-form input {
+  flex: 1;
+  min-width: 0;
+
+  padding: 0.6rem 0.75rem;
+
+  border: none;
+  border-radius: 999px;
+
+  font: inherit;
+}
+
+.search-user-form button,
+.search-user-row button {
+  border: none;
+  border-radius: 999px;
+
+  padding: 0.6rem 0.9rem;
+
+  font-weight: 700;
+
+  background: rgba(255, 255, 255, 0.18);
+  color: #f9fafb;
+}
+
+.search-user-row button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.search-user-error {
+  color: #fecaca;
+  font-weight: 700;
+}
+
+.search-user-results {
+  list-style: none;
+
+  margin: 1.25rem 0 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.search-user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 0.75rem;
+
+  border-radius: 0.9rem;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.search-user-name {
+  color: #f9fafb;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.search-user-name:hover {
+  text-decoration: underline;
+}
