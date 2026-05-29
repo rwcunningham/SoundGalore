@@ -132,7 +132,7 @@ export default function AudioPlayer({post, isActive, onPlay, onOutOfFocus})
                 <img ref={imageRef} src={imageUrl} preload="metadata" style={{ maxWidth: '100%', height: 'auto' }}/>
             </div>
             <audio ref={audioRef} src={audioUrl} preload="metadata"/>
-            <br/><button className="play-pause-button" onClick={togglePlayPause}> {isPlaying ? "\u23F8" : "\u25B6"} </button>  {/* need to add className with some tailwind CSS, for another day...*/}
+            <button className="play-pause-button" onClick={togglePlayPause}> {isPlaying ? "\u23F8" : "\u25B6"} </button>  {/* need to add className with some tailwind CSS, for another day...*/}
             <input type="range" min="0" max={duration} value={currentTime} step="0.1" onChange={handleSeek}/> {/*need to add className and tailwind stuff */}
             <div className="current-time">
                 <p>

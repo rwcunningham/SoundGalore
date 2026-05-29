@@ -2,18 +2,22 @@ import { useNavigate, Link } from "react-router-dom";
 import React, { useState } from "react";
 import Header from "../components/Header";
 import "../styles/pages/Login.css";
+import ImagePicker from "../components/ImagePicker";
 
 export default function CreateAccount() {
     const navigate = useNavigate();
 
     const [account, setAccount] = useState({
         username: "",
+        displayName: "",
         email: "",
         password: "",
         confirmPassword: "",
+        profileImage: null,
     });
 
     const [error, setError] = useState("");
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -30,15 +34,20 @@ export default function CreateAccount() {
         }
 
         try {
+            const formData = new FormData();
+            formData.append("username", account.username);
+            formData.append("display_name", account.displayName);
+            formData.append("email", account.email);
+            formData.append("password", account.password);
+
+            if (account.profileImage) {
+                formData.append("profileImage", account.profileImage);
+            }
+
             const res = await fetch("/api/users", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({
-                    username: account.username,
-                    email: account.email,
-                    password: account.password,
-                }),
+                body: formData,
             });
 
             const data = await res.json();
@@ -77,7 +86,34 @@ export default function CreateAccount() {
                     </div>
 
                     <br />
+                    <div className="field">
+                        <label htmlFor="displayName">
+                            Display name:
+                            <input
+                                type="text"
+                                id="displayName"
+                                name="displayName"
+                                autoComplete="name"
+                                value={account.displayName}
+                                onChange={handleChange}
+                            />
+                        </label>
+                    </div>
 
+                    <br />
+
+                    <div className="field">
+                        <label>Profile picture:</label>
+                        <ImagePicker
+                            maxWidth={400}
+                            maxHeight={400}
+                            onSelect={(file) =>
+                                setAccount((prev) => ({ ...prev, profileImage: file }))
+                            }
+                        />
+                    </div>
+
+                    <br />
                     <div className="field">
                         <label htmlFor="email">
                             Email:

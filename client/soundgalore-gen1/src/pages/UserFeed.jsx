@@ -2,6 +2,7 @@ import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
 import LikeAndCommentBox from "../components/LikeAndCommentBox";
+import UserBadge from "../components/UserBadge";
 
 const PAGE_SIZE = 20;
 
@@ -187,6 +188,8 @@ export default function UserFeed(){
                     posts.map((post) => (
                         <div className="feed-post" key={post.id}>
                             <div className="feed-post-card">
+                                <UserBadge user={post.author} />
+                                
                                 <AudioPlayer
                                     post={post}
                                     isActive={activePostId === post.id}

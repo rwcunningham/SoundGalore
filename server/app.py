@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -15,14 +17,10 @@ from flask_login import (
     login_user,
     logout_user,
 )
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from models import db, User, Post, Media, Comment, Like, Follow
-
-from uuid import uuid4
-
-import re
-from sqlalchemy.exc import IntegrityError
 
 load_dotenv()
 
@@ -94,6 +92,93 @@ def init_database() -> None:
 init_database()
 
 # ------------------------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------------------------
+
+def make_unique_upload_filename(original_filename: str) -> str:
+    safe_name = secure_filename(original_filename)
+
+    stem = Path(safe_name).stem
+    suffix = Path(safe_name).suffix
+
+    if not stem:
+        stem = "upload"
+
+    if not suffix:
+        suffix = ".jpg"
+
+    return f"{stem}-{uuid4().hex}{suffix}"
+
+
+USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]{3,30}$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def validate_new_user(username: str, email: str, password: str) -> str | None:
+    if not USERNAME_RE.fullmatch(username):
+        return "Username must be 3-30 characters and can only contain letters, numbers, and underscores."
+
+    if not EMAIL_RE.fullmatch(email):
+        return "Please enter a valid email address."
+
+    if len(password) < 8:
+        return "Password must be at least 8 characters long."
+
+    if len(password) > 72:
+        return "Password must be 72 characters or fewer."
+
+    if any(ch.isspace() for ch in password):
+        return "Password cannot contain spaces."
+
+    if not re.search(r"[A-Za-z]", password):
+        return "Password must contain at least one letter."
+
+    if not re.search(r"\d", password):
+        return "Password must contain at least one number."
+
+    return None
+
+
+def save_profile_image(profile_image_file):
+    if not profile_image_file:
+        return None
+
+    profile_image_filename = make_unique_upload_filename(profile_image_file.filename)
+
+    profile_image_dest_path = os.path.join(
+        app.config["UPLOAD_IMAGE_DIR"],
+        profile_image_filename,
+    )
+
+    profile_image_file.save(profile_image_dest_path)
+
+    return f"/images/{profile_image_filename}"
+
+
+def comment_to_dict(comment):
+    like_count = Like.query.filter_by(comment_id=comment.id).count()
+    liked_by_current_user = (
+        Like.query
+        .filter_by(user_id=current_user.id, comment_id=comment.id)
+        .first()
+        is not None
+    )
+
+    return {
+        "id": comment.id,
+        "post_id": comment.post_id,
+        "user_id": comment.user_id,
+        "username": comment.author.username,
+        "display_name": comment.author.display_name or comment.author.username,
+        "profile_image_url": comment.author.profile_image_url,
+        "body": comment.body,
+        "created_at": comment.created_at.isoformat(),
+        "like_count": like_count,
+        "liked_by_current_user": liked_by_current_user,
+    }
+
+
+# ------------------------------------------------------------------------------------
 # Routes
 # ------------------------------------------------------------------------------------
 
@@ -109,7 +194,9 @@ def get_current_user():
         {
             "current_user_id": current_user.id,
             "current_user_username": current_user.username,
+            "current_user_display_name": current_user.display_name or current_user.username,
             "current_user_email": current_user.email,
+            "current_user_profile_image_url": current_user.profile_image_url,
         }
     ), 200
 
@@ -122,6 +209,8 @@ def my_followees():
             Follow.follower_id,
             Follow.followee_id,
             User.username.label("followee_name"),
+            User.display_name.label("followee_display_name"),
+            User.profile_image_url.label("followee_profile_image_url"),
             Follow.created_at,
         )
         .join(User, User.id == Follow.followee_id)
@@ -135,10 +224,13 @@ def my_followees():
             "follower_id": row.follower_id,
             "followee_id": row.followee_id,
             "followee_name": row.followee_name,
+            "followee_display_name": row.followee_display_name or row.followee_name,
+            "followee_profile_image_url": row.followee_profile_image_url,
             "created_at": row.created_at.isoformat(),
         }
         for row in rows
     ]
+
     return jsonify(result), 200
 
 
@@ -150,6 +242,8 @@ def my_followers():
             Follow.followee_id,
             Follow.follower_id,
             User.username.label("follower_name"),
+            User.display_name.label("follower_display_name"),
+            User.profile_image_url.label("follower_profile_image_url"),
             Follow.created_at,
         )
         .join(User, User.id == Follow.follower_id)
@@ -163,39 +257,25 @@ def my_followers():
             "followee_id": row.followee_id,
             "follower_id": row.follower_id,
             "follower_name": row.follower_name,
+            "follower_display_name": row.follower_display_name or row.follower_name,
+            "follower_profile_image_url": row.follower_profile_image_url,
             "created_at": row.created_at.isoformat(),
         }
         for row in rows
     ]
+
     return jsonify(result), 200
 
-def make_unique_upload_filename(original_filename: str) -> str:
-    safe_name = secure_filename(original_filename)
-
-    stem = Path(safe_name).stem
-    suffix = Path(safe_name).suffix
-
-    if not stem:
-        stem = "upload"
-
-    return f"{stem}-{uuid4().hex}{suffix}"
 
 @app.route("/api/upload_media", methods=["POST"])
 @login_required
 def upload_media():
-    print(
-        "upload_media -> form:",
-        request.form.to_dict(),
-        "files:",
-        list(request.files.keys()),
-    )
-    print("UPLOAD USER:", current_user.username, current_user.id)
-
     audio_file = request.files.get("audioFile")
     image_file = request.files.get("imageFile")
 
     if not audio_file:
         return jsonify({"error": "post to /api/upload_media was missing audio file"}), 400
+
     if not image_file:
         return jsonify({"error": "post to /api/upload_media was missing image file"}), 400
 
@@ -218,6 +298,7 @@ def upload_media():
             filename=audio_filename,
             user_id=current_user.id,
         )
+
         image_media_entry = Media(
             media_type="image",
             url=image_url,
@@ -228,12 +309,16 @@ def upload_media():
         db.session.add_all([audio_media_entry, image_media_entry])
         db.session.flush()
 
-        post_title = request.form.get("title")
+        post_title = request.form.get("title", "").strip()
         post_description = request.form.get("description", "")
+
+        if not post_title:
+            db.session.rollback()
+            return jsonify({"error": "missing title"}), 400
 
         new_post_entry = Post(
             user_id=current_user.id,
-            title = post_title,
+            title=post_title,
             is_deleted=False,
             description=post_description,
             image_media_id=image_media_entry.id,
@@ -251,7 +336,7 @@ def upload_media():
     return jsonify(
         {
             "post_title": post_title,
-            "post_description":post_description,
+            "post_description": post_description,
             "audio_url": audio_url,
             "audio_timestamp": audio_media_entry.created_at.isoformat(),
             "audio_media_id": audio_media_entry.id,
@@ -279,7 +364,6 @@ def create_post():
     data = request.get_json(force=True)
 
     title = data.get("title", "").strip()
-
     description = data.get("description", "")
     image_media_id = data.get("image_media_id")
     audio_media_id = data.get("audio_media_id")
@@ -287,7 +371,6 @@ def create_post():
 
     if not title:
         return jsonify({"error": "missing title"}), 400
-
 
     new_post = Post(
         user_id=current_user.id,
@@ -313,6 +396,7 @@ def create_post():
 @app.route("/api/media", methods=["GET"])
 def list_media():
     media = Media.query.all()
+
     return jsonify(
         [
             {
@@ -324,6 +408,7 @@ def list_media():
             for item in media
         ]
     ), 200
+
 
 @app.route("/api/user_profile", methods=["GET"])
 @login_required
@@ -356,6 +441,7 @@ def api_user_profile():
     )
 
     return jsonify([post.to_dict() for post in posts]), 200
+
 
 @app.route("/api/user_profile/<user_id>", methods=["GET"])
 @login_required
@@ -391,21 +477,24 @@ def api_user_profile_by_id(user_id):
         )
         .all()
     )
+
     existing_follow = Follow.query.filter_by(
         follower_id=current_user.id,
         followee_id=profile_user.id,
     ).first()
 
-
     return jsonify({
         "user": {
             "id": profile_user.id,
             "username": profile_user.username,
+            "display_name": profile_user.display_name or profile_user.username,
+            "profile_image_url": profile_user.profile_image_url,
             "is_current_user": profile_user.id == current_user.id,
             "is_following": existing_follow is not None,
         },
         "posts": [post.to_dict() for post in posts],
     }), 200
+
 
 @app.route("/api/feed", methods=["GET"])
 @login_required
@@ -415,45 +504,17 @@ def api_feed():
     before_dt = datetime.fromisoformat(before_ts) if before_ts else None
 
     posts = current_user.feed(limit=cache_size, before=before_dt).all()
+
     return jsonify([post.to_dict() for post in posts]), 200
-
-
-USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]{3,30}$")
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-def validate_new_user(username: str, email: str, password: str) -> str | None:
-    if not USERNAME_RE.fullmatch(username):
-        return "Username must be 3-30 characters and can only contain letters, numbers, and underscores."
-
-    if not EMAIL_RE.fullmatch(email):
-        return "Please enter a valid email address."
-
-    if len(password) < 8:
-        return "Password must be at least 8 characters long."
-
-    if len(password) > 72:
-        return "Password must be 72 characters or fewer."
-
-    if any(ch.isspace() for ch in password):
-        return "Password cannot contain spaces."
-
-    if not re.search(r"[A-Za-z]", password):
-        return "Password must contain at least one letter."
-
-    if not re.search(r"\d", password):
-        return "Password must contain at least one number."
-
-    return None
 
 
 @app.post("/api/users")
 def create_user():
-    data = request.get_json(force=True)
-
-    username = data.get("username", "").strip()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
+    username = request.form.get("username", "").strip()
+    display_name = request.form.get("display_name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    profile_image_file = request.files.get("profileImage")
 
     required = {
         "username": username,
@@ -462,22 +523,34 @@ def create_user():
     }
 
     missing = [field for field, value in required.items() if not value]
+
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
     validation_error = validate_new_user(username, email, password)
+
     if validation_error:
         return jsonify({"error": validation_error}), 400
 
     existing_username = User.query.filter_by(username=username).first()
+
     if existing_username:
         return jsonify({"error": "That username is already taken."}), 409
 
     existing_email = User.query.filter_by(email=email).first()
+
     if existing_email:
         return jsonify({"error": "That email is already in use."}), 409
 
-    user = User(username=username, email=email)
+    profile_image_url = save_profile_image(profile_image_file)
+
+    user = User(
+        username=username,
+        display_name=display_name or username,
+        email=email,
+        profile_image_url=profile_image_url,
+    )
+
     user.set_password(password)
 
     db.session.add(user)
@@ -495,8 +568,11 @@ def create_user():
     return jsonify({
         "id": user.id,
         "username": user.username,
+        "display_name": user.display_name,
         "email": user.email,
+        "profile_image_url": user.profile_image_url,
     }), 201
+
 
 @app.post("/api/follows")
 @login_required
@@ -504,6 +580,7 @@ def create_follow():
     data = request.get_json(force=True)
 
     followee_id = data.get("followee_id")
+
     if not followee_id:
         return jsonify({"error": "missing followee_id"}), 400
 
@@ -511,6 +588,7 @@ def create_follow():
         return jsonify({"error": "you cannot follow yourself"}), 400
 
     followee = db.session.get(User, followee_id)
+
     if followee is None:
         return jsonify({"error": "user not found"}), 404
 
@@ -552,11 +630,13 @@ def login() -> tuple[dict, int]:
     data = request.get_json(force=True)
 
     user = User.query.filter_by(username=data.get("username")).first()
+
     if not user:
         return {"error": "invalid username"}, 401
 
     if user.check_password(data.get("password", "")):
         login_user(user, remember=data.get("remember", False))
+
         return {
             "msg": "logged-in",
             "id": user.id,
@@ -569,7 +649,9 @@ def login() -> tuple[dict, int]:
 @login_required
 def logout():
     logout_user()
+
     return {"msg": "logged out"}, 200
+
 
 @app.get("/api/posts/<post_id>/comments")
 @login_required
@@ -693,36 +775,6 @@ def toggle_comment_like(comment_id):
     }), 200
 
 
-def comment_to_dict(comment):
-    like_count = Like.query.filter_by(comment_id=comment.id).count()
-    liked_by_current_user = (
-        Like.query
-        .filter_by(user_id=current_user.id, comment_id=comment.id)
-        .first()
-        is not None
-    )
-
-    return {
-        "id": comment.id,
-        "post_id": comment.post_id,
-        "user_id": comment.user_id,
-        "username": comment.author.username,
-        "body": comment.body,
-        "created_at": comment.created_at.isoformat(),
-        "like_count": like_count,
-        "liked_by_current_user": liked_by_current_user,
-    }
-
-
-@app.errorhandler(400)
-def handle_400(e):
-    app.logger.exception("400 on %s: %s", request.path, e)
-    try:
-        app.logger.info("Headers: %s", dict(request.headers))
-    except Exception:
-        pass
-    return jsonify(error=str(e)), 400
-
 @app.get("/api/users/search")
 @login_required
 def search_users():
@@ -772,10 +824,25 @@ def search_users():
         {
             "id": user.id,
             "username": user.username,
+            "display_name": user.display_name or user.username,
+            "profile_image_url": user.profile_image_url,
             "is_following": user.id in followed_user_ids,
         }
         for user in matching_users
     ]), 200
+
+
+@app.errorhandler(400)
+def handle_400(e):
+    app.logger.exception("400 on %s: %s", request.path, e)
+
+    try:
+        app.logger.info("Headers: %s", dict(request.headers))
+    except Exception:
+        pass
+
+    return jsonify(error=str(e)), 400
+
 
 # ------------------------------------------------------------------------------------
 # Serve React build
@@ -788,8 +855,10 @@ def search_users():
 @app.route("/<path:path>")
 def serve(path: str):
     target = Path(app.static_folder) / path
+
     if path and target.exists():
         return send_from_directory(app.static_folder, path)
+
     return send_from_directory(app.static_folder, "index.html")
 
 

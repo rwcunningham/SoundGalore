@@ -53,7 +53,7 @@ export default function Login(){
     return(
     <>
         <main className="login-page">
-            <Header/>
+            <Header showNav={false} />
             <p>
                 Need an account? <Link to="/create-account">Create one</Link>
             </p>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "./NavBar";
 
-export default function Header() {
+export default function Header( {showNav = true}) {
     const navigate = useNavigate();
     const [isNavOpen, setIsNavOpen] = useState(false);
 
@@ -35,22 +35,28 @@ export default function Header() {
                     SoundGalore
                 </a>
 
-                <button
-                    className="hamburger-button"
-                    onClick={() => setIsNavOpen(prev => !prev)}
-                    aria-label="Toggle navigation menu"
-                >
-                    ☰
-                </button>
+                {showNav && (
+                    <>
+                        <button
+                            className="hamburger-button"
+                            onClick={() => setIsNavOpen(prev => !prev)}
+                            aria-label="Toggle navigation menu"
+                        >
+                            ☰
+                        </button>
 
-                <button onClick={handleLogout}>
-                    Log Off
-                </button>
+                        <button onClick={handleLogout}>
+                            Log Off
+                        </button>
+                    </>
+                )}
             </header>
 
-            <div className={`nav-slide-down ${isNavOpen ? "open" : ""}`}>
-                <NavBar />
-            </div>
+            {showNav && (
+                <div className={`nav-slide-down ${isNavOpen ? "open" : ""}`}>
+                    <NavBar />
+                </div>
+            )}
         </>
     );
 }

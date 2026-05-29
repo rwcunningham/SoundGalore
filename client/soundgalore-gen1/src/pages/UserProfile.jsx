@@ -192,19 +192,7 @@ export default function UserProfile(){
         <div className="UserProfile">
             <Header/>
 
-            <div>
-                <h1>{profileUser?.username || "loading. . ."}</h1>
-
-                {profileUser && !profileUser.is_current_user && (
-                    <button
-                        type="button"
-                        disabled={profileUser.is_following}
-                        onClick={() => handleFollow(profileUser.id)}
-                    >
-                        {profileUser.is_following ? "Following" : "Follow"}
-                    </button>
-                )}
-            </div>
+            
 
             <div
                 className="feed-posts"
@@ -216,6 +204,41 @@ export default function UserProfile(){
                     snapToNextPost(direction);
                 }}
             >
+                {profileUser && (
+                    <div className="feed-post">
+                        <div className="profile-card">
+
+                            <img
+                                className="profile-card-image"
+                                src={
+                                    profileUser.profile_image_url ||
+                                    "/images/default-profile.png"
+                                }
+                                alt={profileUser.username}
+                            />
+
+                            <h2>
+                                {profileUser.display_name || profileUser.username}
+                            </h2>
+
+                            <p>@{profileUser.username}</p>
+
+                            {!profileUser.is_current_user && (
+                                <button
+                                    type="button"
+                                    disabled={profileUser.is_following}
+                                    onClick={() => handleFollow(profileUser.id)}
+                                >
+                                    {profileUser.is_following
+                                        ? "Following"
+                                        : "Follow"}
+                                </button>
+                            )}
+
+                        </div>
+                    </div>
+                )}
+
                 {posts.length > 0 ? (
                     posts.map((post) => (
                         <div className="feed-post" key={post.id}>

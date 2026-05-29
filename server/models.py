@@ -1,46 +1,25 @@
 from __future__ import annotations
-from sqlalchemy.orm import selectinload
 
 """
-Flask‑SQLAlchemy data model for a minimal social‑media style prototype.
-Designed to run on SQLite for local development but portable to PostgreSQL
-(or another full‑featured RDBMS) when you outgrow a single‑file DB.
-
-Key design choices
-------------------
-* **UUID primary keys** (stringified) to avoid autoincrement ID clashes when
-  sharding or bulk‑importing between environments.
-* Timestamp columns (`created_at`) for basic ordering and analytics.
-* Soft‑delete flag on Post so that content can be hidden without breaking
-  foreign‑key constraints.
-* Separate **Media** table allowing each Post to carry 0‑n pieces of media
-  (image, audio, video).  Only URL metadata lives here – binary assets should
-  be stored in object storage (S3, GCS…) not inside the DB.
-* Association tables for **Like** and **Follow** using composite PKs for fast
-  existence queries ("has user already liked this post?").
-* Self‑referencing Comment table supports threaded replies.
+Flask-SQLAlchemy data model for a minimal social-media style prototype.
 """
 
 import uuid
 from datetime import datetime, timezone
+
+from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
-
-# the "db" instance will be initialised in app.py
 
 db: SQLAlchemy = SQLAlchemy()
 
 
 def _uuid() -> str:
-    """Generate a random UUID4 string."""
     return str(uuid.uuid4())
 
 
-# ---------------------------------------------------------------------------
-# Helper for timezone‑aware timestamps
-# ---------------------------------------------------------------------------
-_now_utc = lambda: datetime.now(timezone.utc)
+def _now_utc():
+    return datetime.now(timezone.utc)
 
 
 class User(db.Model, UserMixin):
@@ -48,14 +27,32 @@ class User(db.Model, UserMixin):
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    display_name = db.Column(db.String(80), nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    profile_image_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # relationships (these don't affect the actual database, they just )
-    posts = db.relationship("Post", backref="author", lazy="dynamic", cascade="all, delete-orphan")
-    comments = db.relationship("Comment", backref="author", lazy="dynamic", cascade="all, delete-orphan")
-    likes = db.relationship("Like", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    posts = db.relationship(
+        "Post",
+        backref="author",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+    comments = db.relationship(
+        "Comment",
+        backref="author",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+    likes = db.relationship(
+        "Like",
+        backref="user",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
     following = db.relationship(
         "Follow",
@@ -64,6 +61,7 @@ class User(db.Model, UserMixin):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+
     followers = db.relationship(
         "Follow",
         foreign_keys="Follow.followee_id",
@@ -71,48 +69,48 @@ class User(db.Model, UserMixin):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+
     def set_password(self, raw_pw: str) -> None:
         self.password_hash = generate_password_hash(raw_pw, method="pbkdf2:sha256")
 
     def check_password(self, raw_pw: str) -> bool:
-        return check_password_hash(self.password_hash, raw_pw) #werkzeug method to check password
+        return check_password_hash(self.password_hash, raw_pw)
 
-
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "display_name": self.display_name or self.username,
+            "profile_image_url": self.profile_image_url,
+        }
 
     def feed(self, *, limit: int = 20, before: datetime | None = None):
-        """
-        Return a query for the most-recent, non-deleted Posts written by
-        accounts this user follows.
-
-        • Key-set pagination: pass `before` = last-seen `created_at` timestamp.
-        • Change `limit` for page size / infinite scroll window.
-        """
         q = (
             Post.query
             .join(Follow, Follow.followee_id == Post.user_id)
             .filter(
-                Follow.follower_id == self.id,    # only whom *I* follow
-                Post.is_deleted.is_(False),       # hide soft-deleted
+                Follow.follower_id == self.id,
+                Post.is_deleted.is_(False),
             )
         )
-        if before is not None:                    # key-set pagination
+
+        if before is not None:
             q = q.filter(Post.created_at < before)
 
         return (
-            q.order_by(Post.created_at.desc())    # newest first
-             .limit(limit)
-             .options(                            # avoid N+1 later
-                 db.selectinload(Post.image),
-                 db.selectinload(Post.audio),
-                 db.selectinload(Post.author)
-             )
+            q.order_by(Post.created_at.desc())
+            .limit(limit)
+            .options(
+                db.selectinload(Post.image),
+                db.selectinload(Post.audio),
+                db.selectinload(Post.author),
+            )
         )
 
-
-    def __repr__(self) -> str:  # pragma: no cover – debug convenience
+    def __repr__(self) -> str:
         return f"<User {self.username}>"
 
-# id, user_id, text, created_at, is_deleted, 
+
 class Post(db.Model):
     __tablename__ = "posts"
 
@@ -122,12 +120,24 @@ class Post(db.Model):
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
-    image_media_id =db.Column(db.String(36), db.ForeignKey("media.id"))
+
+    image_media_id = db.Column(db.String(36), db.ForeignKey("media.id"))
     audio_media_id = db.Column(db.String(36), db.ForeignKey("media.id"))
 
-    # relationships
-    comments = db.relationship("Comment", backref="post", lazy="dynamic", cascade="all, delete-orphan")
-    likes = db.relationship("Like", backref="post", lazy="dynamic", cascade="all, delete-orphan")
+    comments = db.relationship(
+        "Comment",
+        backref="post",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+    likes = db.relationship(
+        "Like",
+        backref="post",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
     image = db.relationship("Media", foreign_keys=[image_media_id])
     audio = db.relationship("Media", foreign_keys=[audio_media_id])
 
@@ -140,26 +150,29 @@ class Post(db.Model):
             "description": self.description,
             "created_at": self.created_at.isoformat(),
             "image_url": self.image.url if self.image else None,
-            "audio_url": self.audio.url if self.audio else None
+            "audio_url": self.audio.url if self.audio else None,
+            "author": {
+                "id": self.author.id,
+                "username": self.author.username,
+                "display_name": self.author.display_name or self.author.username,
+                "profile_image_url": self.author.profile_image_url,
+            },
         }
 
 
-#id, post_id, media_type, url, width, height, duration, created_at
 class Media(db.Model):
     __tablename__ = "media"
 
     id = db.Column(db.String(36), primary_key=True, default=_uuid)
-    #post_id = db.Column(db.String(36), db.ForeignKey("posts.id"), nullable=True, index=True)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), index=True)
 
-    media_type = db.Column(db.String(20), nullable=False)  # image | audio | video
+    media_type = db.Column(db.String(20), nullable=False)
     url = db.Column(db.String(255), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
 
-    # optional metadata – helpful for clients but not required
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
-    duration = db.Column(db.Float)  # seconds, only for audio/video
+    duration = db.Column(db.Float)
 
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
@@ -174,19 +187,21 @@ class Comment(db.Model):
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # threaded replies (self‑referencing FK)
     parent_id = db.Column(db.String(36), db.ForeignKey("comments.id"))
+
     replies = db.relationship(
         "Comment",
         backref=db.backref("parent", remote_side=[id]),
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+
     likes = db.relationship(
-        "Like", 
-        backref="comment", 
-        lazy="dynamic", 
-        cascade="all, delete-orphan")
+        "Like",
+        backref="comment",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
 
 class Like(db.Model):
@@ -206,17 +221,13 @@ class Like(db.Model):
 
 class Follow(db.Model):
     __tablename__ = "follows"
-    
-    # follower_id + followee_id composite PK prevents duplicate follow rows.
+
     follower_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
     followee_id = db.Column(db.String(36), db.ForeignKey("users.id"), primary_key=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
 
-    # Index going both: slows down writes, but we can retrieve the followers and follows more quickly 
     __table_args__ = (
-        db.Index("ix_follower_follow_created","follower_id", "created_at"),
+        db.Index("ix_follower_follow_created", "follower_id", "created_at"),
         db.Index("ix_follow_followed_created", "followee_id", "created_at"),
-        db.CheckConstraint('follower_id != followee_id', name='ck_no_self_follow')
+        db.CheckConstraint("follower_id != followee_id", name="ck_no_self_follow"),
     )
-
-    

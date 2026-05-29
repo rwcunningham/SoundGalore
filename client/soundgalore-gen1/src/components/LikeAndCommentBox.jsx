@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import CommentBody from "../components/CommentBody";
+import UserBadge from "../components/UserBadge";
 
 export default function LikeAndCommentBox({post}){
     const [postLiked, setPostLiked] = useState(false);
@@ -159,6 +160,15 @@ export default function LikeAndCommentBox({post}){
 
                     return (
                         <div className="comment" key={comment.id}>
+                            <UserBadge
+                                user={{
+                                    id: comment.user_id,
+                                    username: comment.username,
+                                    display_name: comment.display_name,
+                                    profile_image_url: comment.profile_image_url,
+                                }}
+                                size="small"
+                            />
                             <CommentBody comment={comment} />
 
                             <button type="button" onClick={() => handleCommentLike(comment.id)}>
