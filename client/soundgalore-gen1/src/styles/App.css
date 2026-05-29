@@ -88,6 +88,36 @@ button {
   transform: translateY(0);
 }
 
+.navbar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    text-decoration: none;
+    color: inherit;
+
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
 .App-link {
   color: #61dafb;
 }
@@ -610,6 +640,16 @@ audio {
     "Helvetica Neue",
     Arial,
     sans-serif;
+}
+
+.newpost-image-preview {
+    display: block;
+    width: 100%;
+    max-width: 350px;
+    max-height: 40vh;
+    object-fit: contain;
+    margin: 1rem auto;
+    border-radius: 8px;
 }
 
 .square-container {
