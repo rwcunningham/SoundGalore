@@ -392,6 +392,27 @@ def create_post():
 
     return jsonify(new_post.to_dict()), 201
 
+@app.delete("/api/posts/<post_id>")
+@login_required
+def delete_post(post_id):
+    post = db.session.get(Post, post_id)
+
+    if post is None or post.is_deleted:
+        return jsonify({"error": "post not found"}), 404
+
+    if post.user_id != current_user.id:
+        return jsonify({"error": "you are not allowed to delete this post"}), 403
+
+    post.is_deleted = True
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Delete post failed")
+        return jsonify({"error": "could not delete post"}), 500
+
+    return jsonify({"deleted": True, "post_id": post.id}), 200
 
 @app.route("/api/media", methods=["GET"])
 def list_media():
@@ -573,6 +594,62 @@ def create_user():
         "profile_image_url": user.profile_image_url,
     }), 201
 
+@app.route("/api/users/me", methods=["PATCH"])
+@login_required
+def update_current_user():
+    display_name = request.form.get("display_name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    profile_image_file = request.files.get("profileImage")
+
+    if email and not EMAIL_RE.fullmatch(email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
+
+    if email and email != current_user.email:
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            return jsonify({"error": "That email is already in use."}), 409
+        current_user.email = email
+
+    if display_name:
+        current_user.display_name = display_name
+
+    if profile_image_file:
+        current_user.profile_image_url = save_profile_image(profile_image_file)
+
+    if new_password:
+        if not current_password:
+            return jsonify({"error": "Enter your current password to change your password."}), 400
+
+        if not current_user.check_password(current_password):
+            return jsonify({"error": "Current password is incorrect."}), 401
+
+        validation_error = validate_new_user(
+            current_user.username,
+            current_user.email,
+            new_password,
+        )
+
+        if validation_error:
+            return jsonify({"error": validation_error}), 400
+
+        current_user.set_password(new_password)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Update user failed")
+        return jsonify({"error": "Could not update profile."}), 500
+
+    return jsonify({
+        "id": current_user.id,
+        "username": current_user.username,
+        "display_name": current_user.display_name or current_user.username,
+        "email": current_user.email,
+        "profile_image_url": current_user.profile_image_url,
+    }), 200
 
 @app.post("/api/follows")
 @login_required

@@ -188,6 +188,36 @@ export default function UserProfile(){
         }
     };
 
+
+
+    const handleDeletePost = async (postId) => {
+        const confirmed = window.confirm("Delete this post?");
+
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not delete post.");
+            }
+
+            setPosts((prev) => prev.filter((post) => post.id !== postId));
+
+            if (activePostId === postId) {
+                setActivePostId(null);
+            }
+        } catch (err) {
+            console.error("Failed to delete post:", err);
+            setError(err.message);
+        }
+    };
+
     return(
         <div className="UserProfile">
             <Header/>
@@ -243,6 +273,15 @@ export default function UserProfile(){
                     posts.map((post) => (
                         <div className="feed-post" key={post.id}>
                             <div className="feed-post-card">
+                                {profileUser?.is_current_user && (
+                                    <button
+                                        className="delete-post-button"
+                                        type="button"
+                                        onClick={() => handleDeletePost(post.id)}
+                                    >
+                                        Delete post
+                                    </button>
+                                )}
                                 <AudioPlayer
                                     post={post}
                                     isActive={activePostId === post.id}

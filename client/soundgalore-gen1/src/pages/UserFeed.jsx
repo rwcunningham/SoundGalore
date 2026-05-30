@@ -7,7 +7,7 @@ import UserBadge from "../components/UserBadge";
 const PAGE_SIZE = 20;
 
 export default function UserFeed(){
-    const [currentUsername, setCurrentUsername] = useState("");
+    const [currentUser, setCurrentUser] = useState(null);
     const [posts, setPosts] = useState([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMorePosts, setHasMorePosts] = useState(true);
@@ -32,7 +32,7 @@ export default function UserFeed(){
 
                 if (res.ok){
                     const data = await res.json();
-                    setCurrentUsername(data.current_user_username);
+                    setCurrentUser(data);
                 }
             } catch(err){
                 console.error("Failed to fetch current user: ", err);
@@ -134,6 +134,35 @@ export default function UserFeed(){
         return () => observer.disconnect();
     }, [fetchMorePosts]);
 
+
+    const handleDeletePost = async (postId) => {
+        const confirmed = window.confirm("Delete this post?");
+
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not delete post.");
+            }
+
+            setPosts((prev) => prev.filter((post) => post.id !== postId));
+
+            if (activePostId === postId) {
+                setActivePostId(null);
+            }
+        } catch (err) {
+            console.error("Failed to delete post:", err);
+            alert(err.message);
+        }
+    };
+
     return(
         <div className="UserFeed">
             <div ref={headerWrapRef}>
@@ -190,6 +219,16 @@ export default function UserFeed(){
                             <div className="feed-post-card">
                                 <UserBadge user={post.author} />
                                 
+                                {post.user_id === currentUser?.current_user_id && (
+                                    <button
+                                        className="delete-post-button"
+                                        type="button"
+                                        onClick={() => handleDeletePost(post.id)}
+                                    >
+                                        Delete post
+                                    </button>
+                                )}
+
                                 <AudioPlayer
                                     post={post}
                                     isActive={activePostId === post.id}

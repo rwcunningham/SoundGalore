@@ -67,6 +67,10 @@ export default function NavBar() {
                 <img src="/images/SearchUsers.png" alt="Search Users" />
                 <span>Search Users</span>
             </Link>
+            <Link className="nav-link" to="/edit_profile">
+            <img src="/images/EditProfile.png" alt="Edit Profile" />
+                <span>Edit Profile</span>
+            </Link>
         </div>
     );
 }

@@ -20,6 +20,7 @@ import {Routes, Route, Navigate} from 'react-router-dom';
 import NewPostSuccessful from './pages/NewPostSuccessful';
 import CreateAccount from "./pages/CreateAccount";
 import SearchUser from "./pages/SearchUser";
+import EditUserProfile from "./pages/EditUserProfile";
 
 
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/profile/:userId" element={<UserProfile />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/search-user" element={<SearchUser />} />
+        <Route path="/edit_profile" element={<EditUserProfile />} />
 
         <Route path ="*" element={<Navigate to="/" replace/>}/>
       </Routes>
