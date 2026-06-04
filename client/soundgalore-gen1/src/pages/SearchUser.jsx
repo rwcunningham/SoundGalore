@@ -71,6 +71,33 @@ export default function SearchUser() {
         }
     };
 
+    const handleUnfollow = async (targetUserId) => {
+        setError("");
+
+        try {
+            const res = await fetch(`/api/follows/${targetUserId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not unfollow user.");
+            }
+
+            setUsers((prevUsers) =>
+                prevUsers.map((user) =>
+                    user.id === targetUserId
+                        ? { ...user, is_following: false }
+                        : user
+                )
+            );
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     return (
         <main className="SearchUser">
             <Header />
@@ -111,10 +138,13 @@ export default function SearchUser() {
 
                             <button
                                 type="button"
-                                disabled={user.is_following}
-                                onClick={() => handleFollow(user.id)}
+                                onClick={() =>
+                                    user.is_following
+                                        ? handleUnfollow(user.id)
+                                        : handleFollow(user.id)
+                                }
                             >
-                                {user.is_following ? "Following" : "Follow"}
+                                {user.is_following ? "Unfollow" : "Follow"}
                             </button>
                         </li>
                     ))}

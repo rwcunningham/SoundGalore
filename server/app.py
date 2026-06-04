@@ -358,6 +358,22 @@ def my_followers():
         .all()
     )
 
+    follower_ids = [row.follower_id for row in rows]
+
+    my_following_rows = []
+
+    if follower_ids:
+        my_following_rows = (
+            Follow.query
+            .filter(
+                Follow.follower_id == current_user.id,
+                Follow.followee_id.in_(follower_ids),
+            )
+            .all()
+        )
+
+    users_i_follow_ids = {row.followee_id for row in my_following_rows}
+
     result = [
         {
             "followee_id": row.followee_id,
@@ -365,12 +381,39 @@ def my_followers():
             "follower_name": row.follower_name,
             "follower_display_name": row.follower_display_name or row.follower_name,
             "follower_profile_image_url": row.follower_profile_image_url,
+            "is_following": row.follower_id in users_i_follow_ids,
             "created_at": row.created_at.isoformat(),
         }
         for row in rows
     ]
 
     return jsonify(result), 200
+
+
+@app.delete("/api/follows/<followee_id>")
+@login_required
+def delete_follow(followee_id):
+    existing_follow = Follow.query.filter_by(
+        follower_id=current_user.id,
+        followee_id=followee_id,
+    ).first()
+
+    if existing_follow is None:
+        return jsonify({"error": "follow not found"}), 404
+
+    db.session.delete(existing_follow)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Delete follow failed")
+        return jsonify({"error": "could not unfollow user"}), 500
+
+    return jsonify({
+        "unfollowed": True,
+        "followee_id": followee_id,
+    }), 200
 
 
 @app.route("/api/upload_media", methods=["POST"])

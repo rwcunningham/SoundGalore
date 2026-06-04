@@ -39,6 +39,28 @@ export default function MyFollowees(){
     if (loading) return <p>Loading. . .</p>
     if (error) return <p>Error: {error}</p>
 
+    const handleUnfollow = async (targetUserId) => {
+        setError(null);
+
+        try {
+            const res = await fetch(`/api/follows/${targetUserId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not unfollow user.");
+            }
+
+            setFollowees((prevFollowees) =>
+                prevFollowees.filter((f) => f.followee_id !== targetUserId)
+            );
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     return (
     <div className="MyFollowees">
@@ -46,12 +68,21 @@ export default function MyFollowees(){
         <h1>People I Follow:</h1>
         {followees.map(f => (
             <li key={f.followee_id} className="followee-row">
-            <Link to={`/profile/${f.followee_id}`} className="followee-name">
-                {f.followee_name}
-            </Link>
-            <span className="followee-date">
-                {new Date(f.created_at).toLocaleString()}
-            </span>
+                <Link to={`/profile/${f.followee_id}`} className="followee-name">
+                    {f.followee_name}
+                </Link>
+
+                <span className="followee-date">
+                    {new Date(f.created_at).toLocaleString()}
+                </span>
+
+                <button
+                    type="button"
+                    className="unfollow-button"
+                    onClick={() => handleUnfollow(f.followee_id)}
+                >
+                    Unfollow
+                </button>
             </li>
         ))}
         </ul>

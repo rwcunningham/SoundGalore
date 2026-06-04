@@ -189,6 +189,29 @@ export default function UserProfile(){
         }
     };
 
+    const handleUnfollow = async (targetUserId) => {
+        setError("");
+
+        try {
+            const res = await fetch(`/api/follows/${targetUserId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not unfollow user.");
+            }
+
+            setProfileUser((prev) =>
+                prev ? { ...prev, is_following: false } : prev
+            );
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
 
 
     const handleDeletePost = async (postId) => {
@@ -261,12 +284,13 @@ export default function UserProfile(){
                             ) : (
                                 <button
                                     type="button"
-                                    disabled={profileUser.is_following}
-                                    onClick={() => handleFollow(profileUser.id)}
+                                    onClick={() =>
+                                        profileUser.is_following
+                                            ? handleUnfollow(profileUser.id)
+                                            : handleFollow(profileUser.id)
+                                    }
                                 >
-                                    {profileUser.is_following
-                                        ? "Following"
-                                        : "Follow"}
+                                    {profileUser.is_following ? "Unfollow" : "Follow"}
                                 </button>
                             )}
 

@@ -40,18 +40,56 @@ export default function MyFollowers(){
     if (error) return <p>Error: {error}</p>
 
 
+    const handleUnfollow = async (targetUserId) => {
+        setError(null);
+
+        try {
+            const res = await fetch(`/api/follows/${targetUserId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Could not unfollow user.");
+            }
+
+            setFollowers((prevFollowers) =>
+                prevFollowers.map((f) =>
+                    f.follower_id === targetUserId
+                        ? { ...f, is_following: false }
+                        : f
+                )
+            );
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     return (
     <div className="MyFollowers">
         <ul className="followers-list">
         <h1>My Followers:</h1>
         {followers.map(f => (
             <li key={f.follower_id} className="follower-row">
-            <Link to={`/profile/${f.follower_id}`} className="follower-name">
-                {f.follower_name}
-            </Link>
-            <span className="follower-date">
-                {new Date(f.created_at).toLocaleString()}
-            </span>
+                <Link to={`/profile/${f.follower_id}`} className="follower-name">
+                    {f.follower_name}
+                </Link>
+
+                <span className="follower-date">
+                    {new Date(f.created_at).toLocaleString()}
+                </span>
+
+                {f.is_following && (
+                    <button
+                        type="button"
+                        className="unfollow-button"
+                        onClick={() => handleUnfollow(f.follower_id)}
+                    >
+                        Unfollow
+                    </button>
+                )}
             </li>
         ))}
         </ul>
