@@ -18,6 +18,7 @@ import NewPostSuccessful from './pages/NewPostSuccessful';
 import CreateAccount from "./pages/CreateAccount";
 import SearchUser from "./pages/SearchUser";
 import EditUserProfile from "./pages/EditUserProfile";
+import MyComments from './pages/MyComments';
 
 
 
@@ -34,6 +35,7 @@ function App() {
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/search-user" element={<SearchUser />} />
         <Route path="/edit_profile" element={<EditUserProfile />} />
+        <Route path="/my_comments" element={<MyComments />} />
 
         <Route path ="*" element={<Navigate to="/" replace/>}/>
       </Routes>

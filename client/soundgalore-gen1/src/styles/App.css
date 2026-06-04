@@ -210,7 +210,8 @@ input[type="password"] {
 /* User Feed / User Profile */
 
 .UserFeed,
-.UserProfile {
+.UserProfile,
+.MyComments {
   height: 100svh;
   overflow: hidden;
 
@@ -223,7 +224,8 @@ input[type="password"] {
 }
 
 .UserFeed h1,
-.UserProfile h1 {
+.UserProfile h1,
+.MyComments h1 {
   height: 40px;
 
   margin: 0;
@@ -298,6 +300,99 @@ input[type="password"] {
 
 .profile-card button {
     margin-top: 0.5rem;
+}
+
+.profile-card-button {
+    margin-top: 1rem;
+
+    border: none;
+    border-radius: 999px;
+
+    padding: 0.7rem 1rem;
+
+    background: rgba(255, 255, 255, 0.16);
+    color: #f9fafb;
+
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.profile-card-button:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.comment-feed-card {
+    width: min(92vw, var(--card-width));
+    height: calc(100svh - var(--header-height) - 2.5rem);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    gap: 0.75rem;
+
+    padding: 1rem;
+
+    overflow: hidden;
+
+    border-radius: 1.75rem;
+
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+}
+
+.delete-comment-button {
+    align-self: flex-end;
+
+    border: none;
+    border-radius: 999px;
+
+    padding: 0.4rem 0.75rem;
+
+    background: rgba(180, 35, 35, 0.12);
+    color: #fecaca;
+
+    font-weight: 700;
+}
+
+.delete-comment-button:hover {
+    background: rgba(180, 35, 35, 0.2);
+}
+
+.comment-feed-label,
+.comment-feed-post-author,
+.comment-feed-date {
+    margin: 0;
+
+    font-size: 0.9rem;
+    color: rgba(249, 250, 251, 0.72);
+}
+
+.comment-feed-post-link {
+    color: #e0f2fe;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.comment-feed-post-link:hover {
+    text-decoration: underline;
+}
+
+.comment-feed-body {
+    margin: 0;
+
+    font-size: 1.05rem;
+    line-height: 1.45;
+
+    color: #f9fafb;
 }
 
 /*User Badge*/
@@ -579,7 +674,7 @@ input[type="password"] {
     border-radius: 999px;
     padding: 0.4rem 0.75rem;
     background: rgba(180, 35, 35, 0.12);
-    color: #8f1f1f;
+    color: #fecaca;
     font-weight: 600;
     cursor: pointer;
 }

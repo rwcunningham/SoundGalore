@@ -913,7 +913,88 @@ def resend_verification_email():
         "msg": "Verification email sent."
     }), 200
 
+@app.get("/api/my_comments")
+@login_required
+def get_my_comments():
+    cache_size = 20
+    before_ts = request.args.get("before")
+    before_dt = datetime.fromisoformat(before_ts) if before_ts else None
 
+    comments_query = (
+        Comment.query
+        .join(Post, Post.id == Comment.post_id)
+        .filter(
+            Comment.user_id == current_user.id,
+            Post.is_deleted.is_(False),
+        )
+    )
+
+    if before_dt is not None:
+        comments_query = comments_query.filter(Comment.created_at < before_dt)
+
+    comments = (
+        comments_query
+        .order_by(Comment.created_at.desc())
+        .limit(cache_size)
+        .options(
+            db.selectinload(Comment.author),
+            db.selectinload(Comment.post).selectinload(Post.author),
+        )
+        .all()
+    )
+
+    return jsonify({
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "display_name": current_user.display_name or current_user.username,
+            "profile_image_url": current_user.profile_image_url,
+            "is_current_user": True,
+        },
+        "comments": [
+            {
+                **comment_to_dict(comment),
+                "post": {
+                    "id": comment.post.id,
+                    "title": comment.post.title,
+                    "description": comment.post.description,
+                    "author": {
+                        "id": comment.post.author.id,
+                        "username": comment.post.author.username,
+                        "display_name": comment.post.author.display_name or comment.post.author.username,
+                        "profile_image_url": comment.post.author.profile_image_url,
+                    },
+                },
+            }
+            for comment in comments
+        ],
+    }), 200
+
+
+@app.delete("/api/comments/<comment_id>")
+@login_required
+def delete_comment(comment_id):
+    comment = db.session.get(Comment, comment_id)
+
+    if comment is None:
+        return jsonify({"error": "comment not found"}), 404
+
+    if comment.user_id != current_user.id:
+        return jsonify({"error": "you are not allowed to delete this comment"}), 403
+
+    db.session.delete(comment)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Delete comment failed")
+        return jsonify({"error": "could not delete comment"}), 500
+
+    return jsonify({
+        "deleted": True,
+        "comment_id": comment_id,
+    }), 200
 
 @app.get("/api/posts/<post_id>/comments")
 @login_required

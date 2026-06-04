@@ -2,7 +2,8 @@ import {useEffect, useState, useRef, useCallback} from "react";
 import Header from "../components/Header";
 import AudioPlayer from "../components/AudioPlayer";
 import LikeAndCommentBox from "../components/LikeAndCommentBox";
-import {useParams} from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+
 
 const PAGE_SIZE = 20;
 
@@ -253,7 +254,11 @@ export default function UserProfile(){
 
                             <p>@{profileUser.username}</p>
 
-                            {!profileUser.is_current_user && (
+                            {profileUser.is_current_user ? (
+                                <Link className="profile-card-button" to="/my_comments">
+                                    My comments
+                                </Link>
+                            ) : (
                                 <button
                                     type="button"
                                     disabled={profileUser.is_following}
