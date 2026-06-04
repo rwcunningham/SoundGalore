@@ -3,9 +3,12 @@ import React, { useState } from "react";
 import Header from "../components/Header";
 import "../styles/pages/Login.css";
 import ImagePicker from "../components/ImagePicker";
+import CameraCapture from "../components/CameraCapture";
 
 export default function CreateAccount() {
     const navigate = useNavigate();
+
+    const [success, setSuccess] = useState("");
 
     const [account, setAccount] = useState({
         username: "",
@@ -17,7 +20,19 @@ export default function CreateAccount() {
     });
 
     const [error, setError] = useState("");
+    const [warning, setWarning] = useState("");
+    const [profileImagePreview, setProfileImagePreview] = useState("");
 
+    const selectProfileImage = (file) => {
+        setWarning("");
+
+        setAccount((prev) => ({
+            ...prev,
+            profileImage: file,
+        }));
+
+        setProfileImagePreview(URL.createObjectURL(file));
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -27,6 +42,8 @@ export default function CreateAccount() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        setWarning("");
+        setSuccess("");
 
         if (account.password !== account.confirmPassword) {
             setError("Passwords do not match.");
@@ -56,7 +73,8 @@ export default function CreateAccount() {
                 throw new Error(data.error || "Could not create account.");
             }
 
-            navigate("/login");
+            setSuccess(data.msg || "Account created. Please check your email to verify your account.");
+
         } catch (err) {
             setError(err.message);
         }
@@ -69,6 +87,8 @@ export default function CreateAccount() {
             <section className="login-card">
                 <form onSubmit={handleSubmit}>
                     {error && <p className="login-error">{error}</p>}
+                    {warning && <p className="login-error">{warning}</p>}
+                    {success && <p className="login-success">{success}</p>}
 
                     <div className="field">
                         <label htmlFor="username">
@@ -86,6 +106,7 @@ export default function CreateAccount() {
                     </div>
 
                     <br />
+
                     <div className="field">
                         <label htmlFor="displayName">
                             Display name:
@@ -104,16 +125,31 @@ export default function CreateAccount() {
 
                     <div className="field">
                         <label>Profile picture:</label>
+
+                        {profileImagePreview && (
+                            <img
+                                src={profileImagePreview}
+                                alt="Selected profile preview"
+                                className="profile-image-preview"
+                            />
+                        )}
+
                         <ImagePicker
                             maxWidth={400}
                             maxHeight={400}
-                            onSelect={(file) =>
-                                setAccount((prev) => ({ ...prev, profileImage: file }))
-                            }
+                            onSelect={selectProfileImage}
+                        />
+
+                        <CameraCapture
+                            maxWidth={400}
+                            maxHeight={400}
+                            onSelect={selectProfileImage}
+                            onWarning={setWarning}
                         />
                     </div>
 
                     <br />
+
                     <div className="field">
                         <label htmlFor="email">
                             Email:

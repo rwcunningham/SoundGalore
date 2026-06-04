@@ -98,7 +98,7 @@ export default function ImagePicker({ onSelect, maxWidth = 800, maxHeight = 800 
                 ref={browseInputRef}
                 onChange={handleChange}
                 hidden
-            />
+            /> 
 
         </div>
     );

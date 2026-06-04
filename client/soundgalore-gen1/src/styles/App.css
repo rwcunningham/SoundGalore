@@ -191,6 +191,12 @@ button {
   font-weight: 700;
 }
 
+.login-success {
+    color: #1f7a3f;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
 .field {
   box-sizing: border-box;
 }
@@ -261,38 +267,108 @@ input[type="password"] {
   background: rgba(255, 255, 255, 0.24);
 }
 
+
+.profile-info-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-card {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.profile-card-image {
+    width: min(40vw, 160px);
+    height: min(40vw, 160px);
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-card h2,
+.profile-card p {
+    margin: 0;
+}
+
+.profile-card button {
+    margin-top: 0.5rem;
+}
+
 /*User Badge*/
+.post-author-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
 .user-badge {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    text-decoration: none;
-    color: inherit;
+
+    padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
+
+    color: inherit;
+    text-decoration: none;
+
+    border-radius: 999px;
+    box-sizing: border-box;
+
+    overflow: hidden;
 }
 
 .user-badge-image {
     width: 44px;
     height: 44px;
+    flex: 0 0 44px;
+
     border-radius: 50%;
     object-fit: cover;
-    flex-shrink: 0;
-}
-
-.user-badge-small .user-badge-image {
-    width: 32px;
-    height: 32px;
+    display: block;
 }
 
 .user-badge-text {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     line-height: 1.15;
 }
 
+.user-badge-text strong,
 .user-badge-text span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-badge-text span {
+    opacity: 0.8;
     font-size: 0.85rem;
-    opacity: 0.75;
+}
+
+.user-badge-small .user-badge-image {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+}
+
+.user-badge-large .user-badge-image {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
 }
 
 .profile-card {
@@ -777,6 +853,14 @@ audio {
   background-repeat: no-repeat;
 }
 
+.newpost-button-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
 .submit-newpost-button {
   font:
     600 0.95rem/1
@@ -850,6 +934,19 @@ audio {
   object-fit: cover;
   border-radius: 1rem;
   background: black;
+}
+
+.camera-capture {
+    margin-top: 0.75rem;
+}
+
+.profile-image-preview {
+    display: block;
+    width: min(180px, 60vw);
+    height: min(180px, 60vw);
+    object-fit: cover;
+    border-radius: 50%;
+    margin: 0.75rem auto;
 }
 
 /* Followers / followees */

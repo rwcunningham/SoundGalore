@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import ImagePicker from "../components/ImagePicker";
+import CameraCapture from "../components/CameraCapture";
 
 export default function EditUserProfile() {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function EditUserProfile() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [userId, setUserID] = useState("");
+    const [warning, setWarning] = useState("");
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -56,6 +58,7 @@ export default function EditUserProfile() {
     };
 
     const handleProfileImageSelect = (file) => {
+        setWarning("");
         setForm((prev) => ({ ...prev, profileImage: file }));
 
         if (file) {
@@ -119,6 +122,7 @@ export default function EditUserProfile() {
 
                 <form onSubmit={handleSubmit}>
                     {error && <p className="login-error">{error}</p>}
+                    {warning && <p className="login-error">{warning}</p>}
                     {success && <p className="profile-success">{success}</p>}
 
                     <div className="field">
@@ -164,9 +168,14 @@ export default function EditUserProfile() {
                             maxHeight={400}
                             onSelect={handleProfileImageSelect}
                         />
+                        <CameraCapture
+                            maxWidth={400}
+                            maxHeight={400}
+                            onSelect={handleProfileImageSelect}
+                            onWarning={setWarning}
+                        />
                     </div>
 
-                    <hr />
 
                     <p className="edit-profile-note">
                         Leave password fields blank if you do not want to change your password.

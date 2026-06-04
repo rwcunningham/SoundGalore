@@ -5,15 +5,12 @@
 //
 
 //import React, import CSS, import logos, 
-import React, {useState, useEffect, useRef} from 'react';
-import logo from './logo.svg';
+
 import './styles/App.css';
 import Login from './pages/Login';
 import UserFeed from './pages/UserFeed';
 import UserProfile from './pages/UserProfile';
 import NewPost from './pages/NewPost';
-import AudioPlayer from './components/AudioPlayer';
-import Header from './components/Header';
 import MyFollowees from './pages/MyFollowees'
 import MyFollowers from './pages/MyFollowers'
 import {Routes, Route, Navigate} from 'react-router-dom';

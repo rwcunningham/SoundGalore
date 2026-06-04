@@ -32,6 +32,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(128), nullable=False)
     profile_image_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now_utc, nullable=False)
+    email_verified = db.Column(db.Boolean, nullable=False, default=False)
 
     posts = db.relationship(
         "Post",

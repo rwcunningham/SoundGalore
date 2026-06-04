@@ -7,7 +7,7 @@ export default function UserBadge({ user, size = "normal" }) {
     const profileImageUrl = user.profile_image_url || "/images/default-profile.png";
 
     return (
-        <Link className={`user-badge user-badge-${size}`} to={`/user_profile/${user.id}`}>
+        <Link className={`user-badge user-badge-${size}`} to={`/profile/${user.id}`}>
             <img
                 className="user-badge-image"
                 src={profileImageUrl}

@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, url_for
 from flask_cors import CORS
 from flask_login import (
     LoginManager,
@@ -21,6 +21,12 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from models import db, User, Post, Media, Comment, Like, Follow
+
+import smtplib
+from email.message import EmailMessage
+
+
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 load_dotenv()
 
@@ -43,7 +49,16 @@ CORS(
 app.config["TRAP_BAD_REQUEST_ERRORS"] = True
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only-change-me")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
+app.config["EMAIL_VERIFICATION_MAX_AGE_SECONDS"] = int(
+    os.getenv("EMAIL_VERIFICATION_MAX_AGE_SECONDS", "86400")
+)
+app.config["MAIL_FROM"] = os.getenv("MAIL_FROM", "noreply@soundgalore.local")
+app.config["SMTP_HOST"] = os.getenv("SMTP_HOST", "")
+app.config["SMTP_PORT"] = int(os.getenv("SMTP_PORT", "587"))
+app.config["SMTP_USERNAME"] = os.getenv("SMTP_USERNAME", "")
+app.config["SMTP_PASSWORD"] = os.getenv("SMTP_PASSWORD", "")
+app.config["SMTP_USE_TLS"] = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+app.config["FRONTEND_URL"] = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # ------------------------------------------------------------------------------------
 # Database setup
 # ------------------------------------------------------------------------------------
@@ -154,6 +169,97 @@ def save_profile_image(profile_image_file):
 
     return f"/images/{profile_image_filename}"
 
+def get_email_verification_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(
+        app.config["SECRET_KEY"],
+        salt="email-verification",
+    )
+
+
+def make_email_verification_token(user: User) -> str:
+    serializer = get_email_verification_serializer()
+
+    return serializer.dumps({
+        "user_id": user.id,
+        "email": user.email,
+    })
+
+
+def verify_email_verification_token(token: str) -> User | None:
+    serializer = get_email_verification_serializer()
+
+    try:
+        data = serializer.loads(
+            token,
+            max_age=app.config["EMAIL_VERIFICATION_MAX_AGE_SECONDS"],
+        )
+    except SignatureExpired:
+        return None
+    except BadSignature:
+        return None
+
+    user = db.session.get(User, data.get("user_id"))
+
+    if user is None:
+        return None
+
+    if user.email != data.get("email"):
+        return None
+
+    return user
+
+
+def send_email(to_email: str, subject: str, body: str) -> None:
+    message = EmailMessage()
+    message["From"] = app.config["MAIL_FROM"]
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    smtp_host = app.config["SMTP_HOST"]
+
+    if not smtp_host:
+        app.logger.warning("SMTP_HOST is not set. Email body:\n%s", body)
+        return
+
+    with smtplib.SMTP(smtp_host, app.config["SMTP_PORT"]) as smtp:
+        if app.config["SMTP_USE_TLS"]:
+            smtp.starttls()
+
+        if app.config["SMTP_USERNAME"]:
+            smtp.login(
+                app.config["SMTP_USERNAME"],
+                app.config["SMTP_PASSWORD"],
+            )
+
+        smtp.send_message(message)
+
+
+def send_verification_email(user: User) -> None:
+    token = make_email_verification_token(user)
+
+    verification_url = url_for(
+        "verify_email",
+        token=token,
+        _external=True,
+    )
+
+    body = f"""Welcome to SoundGalore, {user.display_name or user.username}!
+
+Please verify your email address by opening this link:
+
+{verification_url}
+
+This link expires in 24 hours.
+
+If you did not create this account, you can ignore this email.
+"""
+
+    send_email(
+        to_email=user.email,
+        subject="Verify your SoundGalore email address",
+        body=body,
+    )
 
 def comment_to_dict(comment):
     like_count = Like.query.filter_by(comment_id=comment.id).count()
@@ -586,12 +692,23 @@ def create_user():
         app.logger.exception("Create user failed")
         return jsonify({"error": "Could not create user."}), 500
 
+    try:
+        send_verification_email(user)
+    except Exception:
+        app.logger.exception("Could not send verification email")
+        return jsonify({
+            "error": "Account was created, but the verification email could not be sent. Please try resending the verification email.",
+            "email": user.email,
+        }), 500
+
     return jsonify({
         "id": user.id,
         "username": user.username,
         "display_name": user.display_name,
         "email": user.email,
         "profile_image_url": user.profile_image_url,
+        "email_verified": user.email_verified,
+        "msg": "Account created. Please check your email to verify your account.",
     }), 201
 
 @app.route("/api/users/me", methods=["PATCH"])
@@ -701,7 +818,6 @@ def create_follow():
         "created_at": follow.created_at.isoformat(),
     }), 201
 
-
 @app.post("/auth/login")
 def login() -> tuple[dict, int]:
     data = request.get_json(force=True)
@@ -711,16 +827,21 @@ def login() -> tuple[dict, int]:
     if not user:
         return {"error": "invalid username"}, 401
 
-    if user.check_password(data.get("password", "")):
-        login_user(user, remember=data.get("remember", False))
+    if not user.check_password(data.get("password", "")):
+        return {"error": "invalid credentials"}, 401
 
+    if not user.email_verified:
         return {
-            "msg": "logged-in",
-            "id": user.id,
-        }, 200
+            "error": "Please verify your email address before logging in.",
+            "email_unverified": True,
+        }, 403
 
-    return {"error": "invalid credentials"}, 401
+    login_user(user, remember=data.get("remember", False))
 
+    return {
+        "msg": "logged-in",
+        "id": user.id,
+    }, 200
 
 @app.post("/auth/logout")
 @login_required
@@ -728,6 +849,70 @@ def logout():
     logout_user()
 
     return {"msg": "logged out"}, 200
+
+@app.get("/auth/verify-email/<token>")
+def verify_email(token):
+    user = verify_email_verification_token(token)
+
+    if user is None:
+        return """
+            <h1>Verification link invalid or expired</h1>
+            <p>Please request a new verification email.</p>
+        """, 400
+
+    if not user.email_verified:
+        user.email_verified = True
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Email verification failed")
+            return """
+                <h1>Could not verify email</h1>
+                <p>Please try again.</p>
+            """, 500
+
+    frontend_login_url = f"{app.config['FRONTEND_URL']}/"
+
+    return f"""
+        <h1>Email verified</h1>
+        <p>Your email has been verified. You can now log in.</p>
+        <p><a href="{frontend_login_url}">Go to login</a></p>
+    """, 200
+
+@app.post("/auth/resend-verification")
+def resend_verification_email():
+    data = request.get_json(force=True)
+
+    email = data.get("email", "").strip().lower()
+
+    if not email:
+        return jsonify({"error": "Email is required."}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    # Do not reveal whether an email exists.
+    if user is None:
+        return jsonify({
+            "msg": "If that email belongs to an unverified account, a verification email has been sent."
+        }), 200
+
+    if user.email_verified:
+        return jsonify({
+            "msg": "This email is already verified."
+        }), 200
+
+    try:
+        send_verification_email(user)
+    except Exception:
+        app.logger.exception("Could not resend verification email")
+        return jsonify({"error": "Could not send verification email."}), 500
+
+    return jsonify({
+        "msg": "Verification email sent."
+    }), 200
+
 
 
 @app.get("/api/posts/<post_id>/comments")
@@ -930,7 +1115,7 @@ def handle_400(e):
 @app.route("/settings")
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-def serve(path: str):
+def serve(path: str = ""):
     target = Path(app.static_folder) / path
 
     if path and target.exists():

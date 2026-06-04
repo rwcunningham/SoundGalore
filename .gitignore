@@ -4,3 +4,13 @@ client/soundgalore-gen1/public/audio/*
 !client/soundgalore-gen1/public/audio/.gitkeep
 client/soundgalore-gen1/public/images/*
 !client/soundgalore-gen1/public/images/.gitkeep
+# Local secrets
+server/.env
+
+# User uploads / generated media
+server/uploads/audio/*
+server/uploads/images/*
+
+# Keep upload folders in repo if desired
+!server/uploads/audio/.gitkeep
+!server/uploads/images/.gitkeep

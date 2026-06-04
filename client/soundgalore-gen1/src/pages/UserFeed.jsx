@@ -217,7 +217,9 @@ export default function UserFeed(){
                     posts.map((post) => (
                         <div className="feed-post" key={post.id}>
                             <div className="feed-post-card">
-                                <UserBadge user={post.author} />
+                                <div className="post-author-row">
+                                    <UserBadge user={post.author} />
+                                </div>
                                 
                                 {post.user_id === currentUser?.current_user_id && (
                                     <button
