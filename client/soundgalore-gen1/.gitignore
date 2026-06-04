@@ -21,3 +21,14 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# backend secrets
+server/.env
+
+# uploaded/generated media
+server/uploads/audio/*
+server/uploads/images/*
+
+# keep folders in repo
+!server/uploads/audio/.gitkeep
+!server/uploads/images/.gitkeep
