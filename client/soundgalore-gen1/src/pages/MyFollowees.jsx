@@ -68,8 +68,16 @@ export default function MyFollowees(){
         <h1>People I Follow:</h1>
         {followees.map(f => (
             <li key={f.followee_id} className="followee-row">
-                <Link to={`/profile/${f.followee_id}`} className="followee-name">
-                    {f.followee_name}
+                <Link to={`/profile/${f.followee_id}`} className="followee-user-link">
+                    <img
+                        className="follow-user-image"
+                        src={f.followee_profile_image_url || "/images/default-profile.png"}
+                        alt={`${f.followee_name}'s profile`}
+                    />
+
+                    <span className="followee-name">
+                        {f.followee_display_name || f.followee_name}
+                    </span>
                 </Link>
 
                 <span className="followee-date">

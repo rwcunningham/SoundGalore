@@ -31,6 +31,55 @@ button {
   cursor: pointer;
 }
 
+html {
+  min-height: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  font-size: 32px;
+}
+
+.login-page,
+.NewPost,
+.EditUserProfile {
+  min-height: 100svh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  object-fit: contain; /* fit to frame */
+  object-fit: cover;   /* fill frame */
+}
+
+.UserFeed,
+.UserProfile,
+.MyComments {
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* Optional: makes focused fields scroll into view with breathing room */
+input,
+textarea,
+select {
+  scroll-margin-top: 90px;
+  scroll-margin-bottom: 90px;
+}
+
 /* Header */
 
 .Header {
@@ -56,6 +105,18 @@ button {
   letter-spacing: -0.04em;
   text-decoration: none;
   color: #f9fafb;
+}
+
+.header-logo-container {
+    width: 38px;
+    height: 38px;
+}
+
+.soundgalore-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
 }
 
 .hamburger-button {
@@ -202,9 +263,13 @@ button {
 }
 
 input[type="text"],
-input[type="password"] {
-  width: 75%;
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+  width: 100%;
   box-sizing: border-box;
+  font-size: 16px;
 }
 
 /* User Feed / User Profile */
@@ -857,6 +922,91 @@ audio {
   margin-top: 0.1rem;
 }
 
+.comments-preview {
+  max-height: 7.5rem;
+  overflow: hidden;
+}
+
+.comments-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.comments-modal-panel {
+  width: min(94vw, 440px);
+  max-height: min(72svh, 620px);
+
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 1.5rem;
+  padding: 1rem;
+
+  background: rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.comments-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.comments-modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.comments-modal-close {
+  border: none;
+  border-radius: 999px;
+
+  padding: 0.45rem 0.75rem;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: #f9fafb;
+
+  font-weight: 700;
+}
+
+.comments-modal-list {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 0.25rem;
+  padding-bottom: 1rem;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.comments-modal-list .comment {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+
 /* Audio Player */
 
 .AudioPlayer {
@@ -982,14 +1132,64 @@ audio {
     sans-serif;
 }
 
+.newpost-preview-section {
+  width: min(92vw, 400px);
+  margin: 1rem auto;
+}
+
+.image-frame-mode-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+
+  margin-bottom: 0.75rem;
+}
+
+.image-frame-mode-controls button {
+  border: none;
+  border-radius: 999px;
+
+  padding: 0.45rem 0.75rem;
+
+  background: rgba(255, 255, 255, 0.16);
+  color: #f9fafb;
+
+  font-weight: 700;
+}
+
+.image-frame-mode-controls button.active {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.newpost-image-frame {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+
+  overflow: hidden;
+
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.28);
+}
+
 .newpost-image-preview {
-    display: block;
-    width: 100%;
-    max-width: 350px;
-    max-height: 40vh;
-    object-fit: contain;
-    margin: 1rem auto;
-    border-radius: 8px;
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  max-width: none;
+  max-height: none;
+
+  margin: 0;
+  border-radius: 0;
+}
+
+.newpost-image-preview.fit {
+  object-fit: contain;
+}
+
+.newpost-image-preview.fill {
+  object-fit: cover;
 }
 
 .square-container {
@@ -1073,6 +1273,46 @@ audio {
 .follower-date {
   color: #555;
   font-size: 0.9em;
+}
+
+.follower-user-link,
+.followee-user-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    color: inherit;
+    text-decoration: none;
+
+    min-width: 0;
+}
+
+.follow-user-image {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 50%;
+    object-fit: cover;
+
+    flex: 0 0 44px;
+
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.follower-name,
+.followee-name {
+    font-weight: 700;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.follower-row,
+.followee-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /*Unfollow Button*/

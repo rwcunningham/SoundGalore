@@ -1,91 +1,110 @@
-import {useNavigate} from "react-router-dom";
-import React, {useState, useRef} from "react";
+import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import Header from "../components/Header";
 import "../styles/pages/Login.css";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 
-export default function Login(){
+export default function Login() {
     const navigate = useNavigate();
-    const [credentials, setCredentials] = useState({username:"", password:""});
+    const [credentials, setCredentials] = useState({ username: "", password: "" });
     const [error, setError] = useState("");
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setCredentials((prev) => ({ ...prev, [name]: value }));
+    };
 
-    const handleChange = (e) =>
-    {
-        const {name, value} = e.target;
-        setCredentials((prev)=>({...prev, [name]:value}));
-    }
+    const handleInputFocus = (e) => {
+        setTimeout(() => {
+            e.target.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "nearest",
+            });
+        }, 250);
+    };
 
-    const handleSubmit = async (e) =>
-    {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        //const {username, password} = credentials;
-        try{
-            const res = await fetch('/auth/login', {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                credentials:"include",
-                body: JSON.stringify(credentials)});
-            
-            if (res.status === 401){
-                throw new Error("Sorry, your username or password was incorrect. Please try again.");
-            }    
 
-            if (!res.ok){
-                const error = await res.json();
-                throw new Error(error || "Unknown error");
+        // Important for iPhone Safari:
+        // close keyboard / leave input focus before changing pages
+        document.activeElement?.blur();
+
+        try {
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(credentials),
+            });
+
+            if (res.status === 401) {
+                throw new Error("Sorry, your username or password was incorrect. Please try again.");
             }
 
-            
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || "Unknown error");
+            }
 
-            // const {token} = await res.json();
             navigate("/UserFeed");
-        }
-        catch (err){
+        } catch (err) {
             setError(err.message);
         }
+    };
 
-
-
-
-    }
-
-    return(
-    <>
+    return (
         <main className="login-page">
             <Header showNav={false} />
+
             <p>
                 Need an account? <Link to="/create-account">Create one</Link>
             </p>
+
             <section className="login-card">
                 <form onSubmit={handleSubmit}>
-                    <div>
-                        {error && (
-                            <p className="login-error">
-                                {error}
-                            </p>
-                        )}
-                    </div>
+                    {error && (
+                        <p className="login-error">
+                            {error}
+                        </p>
+                    )}
+
                     <div className="field">
                         <label htmlFor="username">
                             Username:
-                            <input type="text" autoComplete="username" id="username" name="username" onChange={handleChange} value={credentials.username} required/>
+                            <input
+                                type="text"
+                                autoComplete="username"
+                                id="username"
+                                name="username"
+                                onChange={handleChange}
+                                onFocus={handleInputFocus}
+                                value={credentials.username}
+                                required
+                            />
                         </label>
                     </div>
-                        <br/>
+
                     <div className="field">
                         <label htmlFor="password">
                             Password:
-                            <input type="password" id="password" name="password" onChange={handleChange} value={credentials.password} required/>
+                            <input
+                                type="password"
+                                autoComplete="current-password"
+                                id="password"
+                                name="password"
+                                onChange={handleChange}
+                                onFocus={handleInputFocus}
+                                value={credentials.password}
+                                required
+                            />
                         </label>
                     </div>
-                    
-        
-                    <br/>
+
                     <button type="submit">Sign In</button>
-                </form>   
+                </form>
             </section>
         </main>
-    </>
-    )
+    );
 }

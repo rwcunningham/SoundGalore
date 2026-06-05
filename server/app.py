@@ -887,7 +887,6 @@ def login() -> tuple[dict, int]:
     }, 200
 
 @app.post("/auth/logout")
-@login_required
 def logout():
     logout_user()
 

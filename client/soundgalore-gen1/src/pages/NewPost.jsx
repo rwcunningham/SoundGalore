@@ -1,7 +1,3 @@
-// I think this is 99% there, but we need a couple things:
-// 1.) we need to put a temporary link (until there's a navbar) to NewPost on the "my feed" page
-// 2.) we need to have this also navigate to the post
-// 3.) we need to do some CSS to this page
 import {useState, useEffect} from 'react';
 import {useNavigate} from "react-router-dom";
 import AudioPicker from '../components/AudioPicker';
@@ -18,6 +14,7 @@ export default function NewPost(){
     const [title, setTitle] = useState('');
     const[description, setDescription] = useState('');
     const navigate = useNavigate();
+    const [imageFrameMode, setImageFrameMode] = useState("fill");
 
     
     const handleImageSelect = (file) => setImageFile(file);
@@ -79,6 +76,10 @@ export default function NewPost(){
         }
     };
 
+    function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
     
     return (
         <>
@@ -93,12 +94,14 @@ export default function NewPost(){
                         <div className="newpost-section-header">Image</div>
 
                         <div className="newpost-button-row">
-                            <ImagePicker onSelect={handleImageSelect}/>
+                            <ImagePicker onSelect={handleImageSelect} />
 
-                            <CameraCapture
-                                onSelect={handleImageSelect}
-                                onWarning={(message) => console.warn(message)}
-                            />
+                            {!isMobileDevice() && (
+                                <CameraCapture
+                                    onSelect={handleImageSelect}
+                                    onWarning={(message) => console.warn(message)}
+                                />
+                            )}
                         </div>
                     </section>
 
@@ -106,14 +109,32 @@ export default function NewPost(){
                         <div className="newpost-section-header">Audio</div>
 
                         <div className="newpost-button-row">
-                            <AudioPicker onSelect={handleAudioSelect}/>
+                            <section className="newpost-media-section">
+                                <div className="newpost-section-header">Audio</div>
+
+                                <AudioRecorder
+                                    onSelect={handleAudioSelect}
+                                    maxDurationSeconds={180}
+                                    onWarning={(message) => console.warn(message)}
+                                />
+
+                                <div className="newpost-button-row">
+                                    <AudioPicker
+                                        onSelect={handleAudioSelect}
+                                        maxDurationSeconds={180}
+                                        onWarning={(message) => console.warn(message)}
+                                    />
+                                </div>
+                            </section>
                         </div>
 
-                        <AudioRecorder
-                            onSelect={handleAudioSelect}
-                            maxDurationSeconds={180}
-                            onWarning={(message) => console.warn(message)}
-                        />
+                        {!isMobileDevice() && (
+                            <AudioRecorder
+                                onSelect={handleAudioSelect}
+                                maxDurationSeconds={180}
+                                onWarning={(message) => console.warn(message)}
+                            />
+                        )}
                     </section>
 
                     <div className="newpost-selected-files">
@@ -122,11 +143,16 @@ export default function NewPost(){
                         </p>
 
                         {imagePreviewUrl && (
-                            <img
-                                className="newpost-image-preview"
-                                src={imagePreviewUrl}
-                                alt={imageFile ? `Preview of ${imageFile.name}` : "Selected image preview"}
-                            />
+                            <div className="newpost-preview-section">
+
+                                <div className="newpost-image-frame">
+                                    <img
+                                        className={`newpost-image-preview ${imageFrameMode}`}
+                                        src={imagePreviewUrl}
+                                        alt="Selected preview"
+                                    />
+                                </div>
+                            </div>
                         )}
 
                         <p>

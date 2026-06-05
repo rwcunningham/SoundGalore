@@ -80,9 +80,13 @@ export default function CreateAccount() {
         }
     };
 
+    function isMobileDevice() {
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+
     return (
         <main className="login-page">
-            <Header />
+            <Header showNav={false}/>
 
             <section className="login-card">
                 <form onSubmit={handleSubmit}>
@@ -139,13 +143,14 @@ export default function CreateAccount() {
                             maxHeight={400}
                             onSelect={selectProfileImage}
                         />
-
+                    {!isMobileDevice() &&   
                         <CameraCapture
                             maxWidth={400}
                             maxHeight={400}
                             onSelect={selectProfileImage}
                             onWarning={setWarning}
                         />
+                    }
                     </div>
 
                     <br />
@@ -205,7 +210,7 @@ export default function CreateAccount() {
 
                     <p>
                         Already have an account?{" "}
-                        <Link to="/login">Sign in</Link>
+                        <Link to="/login">Back to Login</Link>
                     </p>
                 </form>
             </section>

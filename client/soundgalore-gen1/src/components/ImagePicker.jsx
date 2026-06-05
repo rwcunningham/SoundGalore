@@ -88,7 +88,7 @@ export default function ImagePicker({ onSelect, maxWidth = 800, maxHeight = 800 
     return (
         <div>
             <button type="button" onClick={() => browseInputRef.current?.click()}>
-                Browse Image...
+                Upload Image
             </button>
 
             <input

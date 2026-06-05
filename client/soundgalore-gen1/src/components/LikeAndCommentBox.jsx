@@ -1,23 +1,23 @@
-import {useEffect, useRef, useState} from "react";
+import { useEffect, useRef, useState } from "react";
 import CommentBody from "../components/CommentBody";
 import UserBadge from "../components/UserBadge";
 
-export default function LikeAndCommentBox({post}){
+export default function LikeAndCommentBox({ post }) {
     const [postLiked, setPostLiked] = useState(false);
     const [postLikeCount, setPostLikeCount] = useState(0);
     const [comments, setComments] = useState([]);
     const [showCommentBox, setShowCommentBox] = useState(false);
     const [commentText, setCommentText] = useState("");
-    const [expandedComments, setExpandedComments] = useState(false);
+    const [commentsModalOpen, setCommentsModalOpen] = useState(false);
     const [error, setError] = useState("");
+
+    const commentsPanelRef = useRef(null);
 
     const sortedComments = [...comments].sort(
         (a, b) => (b.like_count ?? 0) - (a.like_count ?? 0)
     );
 
-    const visibleComments = expandedComments
-    ? sortedComments
-    : sortedComments.slice(0, 2);
+    const previewComments = sortedComments.slice(0, 2);
 
     useEffect(() => {
         const fetchCommentsAndLikes = async () => {
@@ -46,6 +46,44 @@ export default function LikeAndCommentBox({post}){
             fetchCommentsAndLikes();
         }
     }, [post?.id]);
+
+    useEffect(() => {
+        if (!commentsModalOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setCommentsModalOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [commentsModalOpen]);
+
+    const stopScrollFromReachingFeed = (e) => {
+        e.stopPropagation();
+    };
+
+    const handleBackdropPointerDown = (e) => {
+        if (e.target === e.currentTarget) {
+            setCommentsModalOpen(false);
+        }
+    };
+
+    const handleBackdropWheel = (e) => {
+        if (e.target === e.currentTarget) {
+            setCommentsModalOpen(false);
+        }
+    };
+
+    const handleBackdropTouchMove = (e) => {
+        if (e.target === e.currentTarget) {
+            setCommentsModalOpen(false);
+        }
+    };
 
     const handlePostLike = async () => {
         try {
@@ -76,9 +114,9 @@ export default function LikeAndCommentBox({post}){
         try {
             const res = await fetch(`/api/posts/${post.id}/comments`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({body: commentText}),
+                body: JSON.stringify({ body: commentText }),
             });
 
             if (!res.ok) {
@@ -90,6 +128,7 @@ export default function LikeAndCommentBox({post}){
             setComments((prev) => [newComment, ...prev]);
             setCommentText("");
             setShowCommentBox(false);
+            setCommentsModalOpen(true);
         } catch (err) {
             setError("Could not post comment.");
             console.error("Failed to post comment: ", err);
@@ -113,10 +152,10 @@ export default function LikeAndCommentBox({post}){
                 prev.map((comment) =>
                     comment.id === commentId
                         ? {
-                            ...comment,
-                            liked_by_current_user: data.liked,
-                            like_count: data.like_count,
-                        }
+                              ...comment,
+                              liked_by_current_user: data.liked,
+                              like_count: data.like_count,
+                          }
                         : comment
                 )
             );
@@ -126,8 +165,27 @@ export default function LikeAndCommentBox({post}){
         }
     };
 
+    const renderComment = (comment) => (
+        <div className="comment" key={comment.id}>
+            <UserBadge
+                user={{
+                    id: comment.user_id,
+                    username: comment.username,
+                    display_name: comment.display_name,
+                    profile_image_url: comment.profile_image_url,
+                }}
+                size="small"
+            />
 
-    return(
+            <CommentBody comment={comment} />
+
+            <button type="button" onClick={() => handleCommentLike(comment.id)}>
+                {comment.liked_by_current_user ? "♥" : "♡"} {comment.like_count}
+            </button>
+        </div>
+    );
+
+    return (
         <div className="LikeAndCommentBox">
             <div className="like-comment-actions">
                 <button type="button" onClick={handlePostLike}>
@@ -147,42 +205,57 @@ export default function LikeAndCommentBox({post}){
                         placeholder="Write a comment..."
                     />
 
-                    <button type="submit">
-                        Post comment
-                    </button>
+                    <button type="submit">Post comment</button>
                 </form>
             )}
 
             {error && <p className="comment-error">{error}</p>}
 
-            <div className={expandedComments ? "comments-list expanded" : "comments-list collapsed"}>
-                {visibleComments.map((comment) => {
-
-                    return (
-                        <div className="comment" key={comment.id}>
-                            <UserBadge
-                                user={{
-                                    id: comment.user_id,
-                                    username: comment.username,
-                                    display_name: comment.display_name,
-                                    profile_image_url: comment.profile_image_url,
-                                }}
-                                size="small"
-                            />
-                            <CommentBody comment={comment} />
-
-                            <button type="button" onClick={() => handleCommentLike(comment.id)}>
-                                {comment.liked_by_current_user ? "♥" : "♡"} {comment.like_count}
-                            </button>
-                        </div>
-                    );
-                })}
+            <div className="comments-preview">
+                {previewComments.map(renderComment)}
             </div>
 
             {comments.length > 0 && (
-                <button type="button" onClick={() => setExpandedComments((prev) => !prev)}>
-                    {expandedComments ? "Show fewer comments" : "See more comments"}
+                <button
+                    type="button"
+                    className="see-more-comments-button"
+                    onClick={() => setCommentsModalOpen(true)}
+                >
+                    See comments {comments.length}
                 </button>
+            )}
+
+            {commentsModalOpen && (
+                <div
+                    className="comments-modal-backdrop"
+                    onPointerDown={handleBackdropPointerDown}
+                    onWheel={handleBackdropWheel}
+                    onTouchMove={handleBackdropTouchMove}
+                >
+                    <section
+                        ref={commentsPanelRef}
+                        className="comments-modal-panel"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onWheel={stopScrollFromReachingFeed}
+                        onTouchMove={stopScrollFromReachingFeed}
+                    >
+                        <div className="comments-modal-header">
+                            <h2>Comments</h2>
+
+                            <button
+                                type="button"
+                                className="comments-modal-close"
+                                onClick={() => setCommentsModalOpen(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="comments-modal-list">
+                            {sortedComments.map(renderComment)}
+                        </div>
+                    </section>
+                </div>
             )}
         </div>
     );
