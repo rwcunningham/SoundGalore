@@ -306,7 +306,17 @@ export default function UserProfile(){
                                     <button
                                         className="delete-post-button"
                                         type="button"
-                                        onClick={() => handleDeletePost(post.id)}
+                                        onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        onTouchStart={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleDeletePost(post.id);
+                                        }}
                                     >
                                         Delete post
                                     </button>

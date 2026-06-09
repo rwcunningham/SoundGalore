@@ -12,6 +12,8 @@ export default function LikeAndCommentBox({ post }) {
     const [error, setError] = useState("");
 
     const commentsPanelRef = useRef(null);
+    const isSubmittingCommentRef = useRef(false);
+    const lastTouchSubmitRef = useRef(0);
 
     const sortedComments = [...comments].sort(
         (a, b) => (b.like_count ?? 0) - (a.like_count ?? 0)
@@ -33,7 +35,7 @@ export default function LikeAndCommentBox({ post }) {
 
                 const data = await res.json();
 
-                setComments(data.comments);
+                setComments(data.comments || []);
                 setPostLiked(data.post_liked_by_current_user);
                 setPostLikeCount(data.post_like_count);
             } catch (err) {
@@ -107,16 +109,24 @@ export default function LikeAndCommentBox({ post }) {
     };
 
     const handleCommentSubmit = async (e) => {
-        e.preventDefault();
+        e?.preventDefault();
+        e?.stopPropagation();
 
-        if (!commentText.trim()) return;
+        if (isSubmittingCommentRef.current) return;
+
+        const trimmedComment = commentText.trim();
+
+        if (!trimmedComment) return;
+
+        isSubmittingCommentRef.current = true;
+        setError("");
 
         try {
             const res = await fetch(`/api/posts/${post.id}/comments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ body: commentText }),
+                body: JSON.stringify({ body: trimmedComment }),
             });
 
             if (!res.ok) {
@@ -132,6 +142,10 @@ export default function LikeAndCommentBox({ post }) {
         } catch (err) {
             setError("Could not post comment.");
             console.error("Failed to post comment: ", err);
+        } finally {
+            setTimeout(() => {
+                isSubmittingCommentRef.current = false;
+            }, 700);
         }
     };
 
@@ -192,20 +206,50 @@ export default function LikeAndCommentBox({ post }) {
                     {postLiked ? "♥" : "♡"} {postLikeCount}
                 </button>
 
-                <button type="button" onClick={() => setShowCommentBox((prev) => !prev)}>
+                <button
+                    type="button"
+                    onClick={() => setShowCommentBox((prev) => !prev)}
+                >
                     Comment
                 </button>
             </div>
 
             {showCommentBox && (
-                <form onSubmit={handleCommentSubmit}>
+                <form
+                    className="comment-form"
+                    onSubmit={handleCommentSubmit}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                >
                     <textarea
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Write a comment..."
                     />
 
-                    <button type="submit">Post comment</button>
+                    <button
+                        type="button"
+                        onPointerDown={(e) => {
+                            if (e.pointerType !== "touch") return;
+
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            lastTouchSubmitRef.current = Date.now();
+                            handleCommentSubmit(e);
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            if (Date.now() - lastTouchSubmitRef.current < 700) return;
+
+                            handleCommentSubmit(e);
+                        }}
+                    >
+                        Post comment
+                    </button>
                 </form>
             )}
 
@@ -236,6 +280,7 @@ export default function LikeAndCommentBox({ post }) {
                         ref={commentsPanelRef}
                         className="comments-modal-panel"
                         onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         onWheel={stopScrollFromReachingFeed}
                         onTouchMove={stopScrollFromReachingFeed}
                     >

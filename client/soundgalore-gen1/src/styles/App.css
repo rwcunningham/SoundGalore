@@ -734,6 +734,10 @@ select {
 }
 
 .delete-post-button {
+  position: relative;
+    z-index: 20;
+    pointer-events: auto;
+    touch-action: manipulation;
     align-self: flex-end;
     border: none;
     border-radius: 999px;
@@ -801,6 +805,57 @@ audio {
 .LikeAndCommentBox > button:hover,
 .comment button:hover {
   background: rgba(255, 255, 255, 0.24);
+}
+
+/* Fix comment composer getting clipped when typing */
+
+.feed-posts:has(.LikeAndCommentBox textarea:focus) {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+.feed-post:has(.LikeAndCommentBox textarea:focus) {
+  scroll-snap-align: none;
+  scroll-snap-stop: normal;
+
+  align-items: flex-start;
+
+  min-height: auto;
+
+  padding-top: 0.75rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+.feed-post-card:has(.LikeAndCommentBox textarea:focus) {
+  height: auto;
+  max-height: calc(100dvh - var(--header-height) - 1rem);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+.feed-post-card:has(.LikeAndCommentBox textarea:focus) .LikeAndCommentBox {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.feed-post-card:has(.LikeAndCommentBox textarea:focus) .comments-preview,
+.feed-post-card:has(.LikeAndCommentBox textarea:focus) .comments-list {
+  display: none;
+}
+
+.feed-post-card:has(.LikeAndCommentBox textarea:focus) .LikeAndCommentBox form {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+
+  padding-top: 0.5rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+
+  background: rgba(17, 24, 39, 0.96);
+  border-radius: 1rem;
 }
 
 /* Comment form */
