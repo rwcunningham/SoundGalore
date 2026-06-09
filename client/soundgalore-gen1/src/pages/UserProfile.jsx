@@ -4,7 +4,6 @@ import AudioPlayer from "../components/AudioPlayer";
 import LikeAndCommentBox from "../components/LikeAndCommentBox";
 import { Link, useParams } from "react-router-dom";
 
-
 const PAGE_SIZE = 20;
 
 export default function UserProfile(){
@@ -19,9 +18,9 @@ export default function UserProfile(){
     const [error, setError] = useState("");
 
     const loadMoreRef = useRef(null);
-    const lastScrollTopRef = useRef(0);
     const feedPostsRef = useRef(null);
     const isSnappingRef = useRef(false);
+    const scrollEndTimerRef = useRef(null);
 
     useEffect(() => {
         const fetchUserPosts = async () => {
@@ -40,6 +39,10 @@ export default function UserProfile(){
                 setProfileUser(data.user);
                 setPosts(data.posts);
                 setHasMorePosts(data.posts.length >= PAGE_SIZE);
+
+                if (data.posts.length > 0) {
+                    setActivePostId(data.posts[0].id);
+                }
             } catch (err) {
                 console.error("Failed to fetch user posts: ", err);
             }
@@ -51,6 +54,12 @@ export default function UserProfile(){
         setActivePostId(null);
 
         fetchUserPosts();
+
+        return () => {
+            if (scrollEndTimerRef.current) {
+                clearTimeout(scrollEndTimerRef.current);
+            }
+        };
     }, [userId]);
 
     const fetchMorePosts = useCallback(async () => {
@@ -119,23 +128,63 @@ export default function UserProfile(){
         return () => observer.disconnect();
     }, [fetchMorePosts]);
 
-    const snapToNextPost = (direction) => {
-        if (!feedPostsRef.current || isSnappingRef.current) return;
+    const getCenteredPostId = () => {
+        if (!feedPostsRef.current) return null;
 
         const postCards = Array.from(
-            feedPostsRef.current.querySelectorAll(".feed-post")
+            feedPostsRef.current.querySelectorAll(".feed-post[data-post-id]")
         );
 
         const feedRect = feedPostsRef.current.getBoundingClientRect();
         const feedCenterY = feedRect.top + feedRect.height / 2;
 
-        const currentIndex = postCards.findIndex((card) => {
-            const rect = card.getBoundingClientRect();
+        let closestPostId = null;
+        let closestDistance = Infinity;
 
-            return (
-                rect.top <= feedCenterY &&
-                rect.bottom >= feedCenterY
-            );
+        postCards.forEach((card) => {
+            const rect = card.getBoundingClientRect();
+            const cardCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(cardCenterY - feedCenterY);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestPostId = card.getAttribute("data-post-id");
+            }
+        });
+
+        return closestPostId;
+    };
+
+    const activateCenteredPost = () => {
+        const centeredPostId = getCenteredPostId();
+
+        if (centeredPostId) {
+            setActivePostId(centeredPostId);
+        }
+    };
+
+    const snapToNextPost = (direction) => {
+        if (!feedPostsRef.current || isSnappingRef.current) return;
+
+        const postCards = Array.from(
+            feedPostsRef.current.querySelectorAll(".feed-post[data-post-id]")
+        );
+
+        const feedRect = feedPostsRef.current.getBoundingClientRect();
+        const feedCenterY = feedRect.top + feedRect.height / 2;
+
+        let currentIndex = -1;
+        let closestDistance = Infinity;
+
+        postCards.forEach((card, index) => {
+            const rect = card.getBoundingClientRect();
+            const cardCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(cardCenterY - feedCenterY);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                currentIndex = index;
+            }
         });
 
         if (currentIndex === -1) return;
@@ -154,14 +203,33 @@ export default function UserProfile(){
             feedRect.top -
             (feedPostsRef.current.clientHeight - nextCard.clientHeight) / 2;
 
+        const nextPostId = nextCard.getAttribute("data-post-id");
+
+        if (nextPostId) {
+            setActivePostId(nextPostId);
+        }
+
         feedPostsRef.current.scrollTo({
             top: targetTop,
             behavior: "smooth",
         });
 
         setTimeout(() => {
+            activateCenteredPost();
             isSnappingRef.current = false;
         }, 500);
+    };
+
+    const handleProfileScroll = () => {
+        if (isSnappingRef.current) return;
+
+        if (scrollEndTimerRef.current) {
+            clearTimeout(scrollEndTimerRef.current);
+        }
+
+        scrollEndTimerRef.current = setTimeout(() => {
+            activateCenteredPost();
+        }, 150);
     };
 
     const handleFollow = async (targetUserId) => {
@@ -212,8 +280,6 @@ export default function UserProfile(){
         }
     };
 
-
-
     const handleDeletePost = async (postId) => {
         const confirmed = window.confirm("Delete this post?");
 
@@ -246,11 +312,10 @@ export default function UserProfile(){
         <div className="UserProfile">
             <Header/>
 
-            
-
             <div
                 className="feed-posts"
                 ref={feedPostsRef}
+                onScroll={handleProfileScroll}
                 onWheel={(e) => {
                     e.preventDefault();
 
@@ -261,7 +326,6 @@ export default function UserProfile(){
                 {profileUser && (
                     <div className="feed-post">
                         <div className="profile-card">
-
                             <img
                                 className="profile-card-image"
                                 src={
@@ -276,6 +340,8 @@ export default function UserProfile(){
                             </h2>
 
                             <p>@{profileUser.username}</p>
+
+                            {error && <p className="profile-error">{error}</p>}
 
                             {profileUser.is_current_user ? (
                                 <Link className="profile-card-button" to="/my_comments">
@@ -293,14 +359,17 @@ export default function UserProfile(){
                                     {profileUser.is_following ? "Unfollow" : "Follow"}
                                 </button>
                             )}
-
                         </div>
                     </div>
                 )}
 
                 {posts.length > 0 ? (
                     posts.map((post) => (
-                        <div className="feed-post" key={post.id}>
+                        <div
+                            className="feed-post"
+                            key={post.id}
+                            data-post-id={post.id}
+                        >
                             <div className="feed-post-card">
                                 {profileUser?.is_current_user && (
                                     <button
@@ -321,31 +390,11 @@ export default function UserProfile(){
                                         Delete post
                                     </button>
                                 )}
+
                                 <AudioPlayer
                                     post={post}
                                     isActive={activePostId === post.id}
                                     onPlay={() => setActivePostId(post.id)}
-                                    onOutOfFocus={() => {
-                                        if (activePostId === post.id && feedPostsRef.current) {
-                                            const currentIndex = posts.findIndex((p) => p.id === post.id);
-
-                                            const currentScrollTop = feedPostsRef.current.scrollTop;
-                                            const scrollingDown = currentScrollTop > lastScrollTopRef.current;
-                                            lastScrollTopRef.current = currentScrollTop;
-
-                                            const nextIndex = scrollingDown
-                                                ? currentIndex + 1
-                                                : currentIndex - 1;
-
-                                            const nextPost = posts[nextIndex];
-
-                                            if (nextPost) {
-                                                setActivePostId(nextPost.id);
-                                            } else {
-                                                setActivePostId(null);
-                                            }
-                                        }
-                                    }}
                                 />
 
                                 <LikeAndCommentBox post={post}/>

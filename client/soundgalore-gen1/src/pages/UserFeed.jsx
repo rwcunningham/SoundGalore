@@ -12,15 +12,12 @@ export default function UserFeed(){
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMorePosts, setHasMorePosts] = useState(true);
     const [activePostId, setActivePostId] = useState(null);
-    const lastScrollYRef = useRef(window.scrollY);
 
     const feedPostsRef = useRef(null);
-    //const touchStartYRef = useRef(null);
     const isSnappingRef = useRef(false);
-
     const loadMoreRef = useRef(null);
-
     const headerWrapRef = useRef(null);
+    const scrollEndTimerRef = useRef(null);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -58,6 +55,9 @@ export default function UserFeed(){
                     setHasMorePosts(false);
                 }
 
+                if (data.length > 0) {
+                    setActivePostId(data[0].id);
+                }
             } catch (err) {
                 console.error("Failed to fetch feed: ", err);
             }
@@ -65,6 +65,12 @@ export default function UserFeed(){
 
         fetchUser();
         fetchFeed();
+
+        return () => {
+            if (scrollEndTimerRef.current) {
+                clearTimeout(scrollEndTimerRef.current);
+            }
+        };
     }, []);
 
     const fetchMorePosts = useCallback(async () => {
@@ -112,7 +118,7 @@ export default function UserFeed(){
     }, [isLoadingMore, hasMorePosts, posts]);
 
     useEffect(() => {
-        if (!loadMoreRef.current) return;
+        if (!loadMoreRef.current || !feedPostsRef.current) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -123,7 +129,7 @@ export default function UserFeed(){
                 }
             },
             {
-                root: null,
+                root: feedPostsRef.current,
                 rootMargin: "400px",
                 threshold: 0,
             }
@@ -134,6 +140,109 @@ export default function UserFeed(){
         return () => observer.disconnect();
     }, [fetchMorePosts]);
 
+    const getCenteredPostId = () => {
+        if (!feedPostsRef.current) return null;
+
+        const postCards = Array.from(
+            feedPostsRef.current.querySelectorAll(".feed-post[data-post-id]")
+        );
+
+        const feedRect = feedPostsRef.current.getBoundingClientRect();
+        const feedCenterY = feedRect.top + feedRect.height / 2;
+
+        let closestPostId = null;
+        let closestDistance = Infinity;
+
+        postCards.forEach((card) => {
+            const rect = card.getBoundingClientRect();
+            const cardCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(cardCenterY - feedCenterY);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestPostId = card.getAttribute("data-post-id");
+            }
+        });
+
+        return closestPostId;
+    };
+
+    const activateCenteredPost = () => {
+        const centeredPostId = getCenteredPostId();
+
+        if (centeredPostId) {
+            setActivePostId(centeredPostId);
+        }
+    };
+
+    const snapToNextPost = (direction) => {
+        if (!feedPostsRef.current || isSnappingRef.current) return;
+
+        const postCards = Array.from(
+            feedPostsRef.current.querySelectorAll(".feed-post[data-post-id]")
+        );
+
+        const feedRect = feedPostsRef.current.getBoundingClientRect();
+        const feedCenterY = feedRect.top + feedRect.height / 2;
+
+        let currentIndex = -1;
+        let closestDistance = Infinity;
+
+        postCards.forEach((card, index) => {
+            const rect = card.getBoundingClientRect();
+            const cardCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(cardCenterY - feedCenterY);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                currentIndex = index;
+            }
+        });
+
+        if (currentIndex === -1) return;
+
+        const nextCard = postCards[currentIndex + direction];
+
+        if (!nextCard) return;
+
+        isSnappingRef.current = true;
+
+        const cardRect = nextCard.getBoundingClientRect();
+
+        const targetTop =
+            feedPostsRef.current.scrollTop +
+            cardRect.top -
+            feedRect.top -
+            (feedPostsRef.current.clientHeight - nextCard.clientHeight) / 2;
+
+        const nextPostId = nextCard.getAttribute("data-post-id");
+
+        if (nextPostId) {
+            setActivePostId(nextPostId);
+        }
+
+        feedPostsRef.current.scrollTo({
+            top: targetTop,
+            behavior: "smooth",
+        });
+
+        setTimeout(() => {
+            activateCenteredPost();
+            isSnappingRef.current = false;
+        }, 500);
+    };
+
+    const handleFeedScroll = () => {
+        if (isSnappingRef.current) return;
+
+        if (scrollEndTimerRef.current) {
+            clearTimeout(scrollEndTimerRef.current);
+        }
+
+        scrollEndTimerRef.current = setTimeout(() => {
+            activateCenteredPost();
+        }, 150);
+    };
 
     const handleDeletePost = async (postId) => {
         const confirmed = window.confirm("Delete this post?");
@@ -171,61 +280,45 @@ export default function UserFeed(){
                     <h1>Your Soundgalore Feed</h1>
                 </div>
             </div>
+
             <div
                 className="feed-posts"
                 ref={feedPostsRef}
+                onScroll={handleFeedScroll}
                 onWheel={(e) => {
                     e.preventDefault();
 
-                    if (isSnappingRef.current) return;
-
                     const direction = e.deltaY > 0 ? 1 : -1;
-                    const postCards = Array.from(feedPostsRef.current.querySelectorAll(".feed-post"));
-
-                    const currentIndex = postCards.findIndex((card) => {
-                        const rect = card.getBoundingClientRect();
-                        return rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2;
-                    });
-
-                    const nextCard = postCards[currentIndex + direction];
-
-                    if (nextCard) {
-                        isSnappingRef.current = true;
-
-                        const feedRect = feedPostsRef.current.getBoundingClientRect();
-                        const cardRect = nextCard.getBoundingClientRect();
-                        const targetTop =
-                            feedPostsRef.current.scrollTop +
-                            cardRect.top -
-                            feedRect.top -
-                            (feedPostsRef.current.clientHeight - nextCard.clientHeight) / 2;
-
-                        feedPostsRef.current.scrollTo({
-                            top: targetTop,
-                            behavior: "smooth",
-                        });
-
-                        setTimeout(() => {
-                            isSnappingRef.current = false;
-                        }, 650);
-                    }
+                    snapToNextPost(direction);
                 }}
             >
-
-                
                 {posts.length > 0 ? (
                     posts.map((post) => (
-                        <div className="feed-post" key={post.id}>
+                        <div
+                            className="feed-post"
+                            key={post.id}
+                            data-post-id={post.id}
+                        >
                             <div className="feed-post-card">
                                 <div className="post-author-row">
                                     <UserBadge user={post.author} />
                                 </div>
-                                
+
                                 {post.user_id === currentUser?.current_user_id && (
                                     <button
                                         className="delete-post-button"
                                         type="button"
-                                        onClick={() => handleDeletePost(post.id)}
+                                        onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        onTouchStart={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleDeletePost(post.id);
+                                        }}
                                     >
                                         Delete post
                                     </button>
@@ -235,39 +328,18 @@ export default function UserFeed(){
                                     post={post}
                                     isActive={activePostId === post.id}
                                     onPlay={() => setActivePostId(post.id)}
-                                    onOutOfFocus={() => {
-                                        if (activePostId === post.id) {
-                                            const currentIndex = posts.findIndex((p) => p.id === post.id);
-
-                                            const currentScrollY = window.scrollY;
-                                            const scrollingDown = currentScrollY > lastScrollYRef.current;
-                                            lastScrollYRef.current = currentScrollY;
-
-                                            const nextIndex = scrollingDown
-                                                ? currentIndex + 1
-                                                : currentIndex - 1;
-
-                                            const nextPost = posts[nextIndex];
-
-                                            if (nextPost) {
-                                                setActivePostId(nextPost.id);
-                                            } else {
-                                                setActivePostId(null);
-                                            }
-                                        }
-                                    }}
                                 />
+
                                 <LikeAndCommentBox post={post}/>
                             </div>
                         </div>
-))
+                    ))
                 ) : (
                     <p>No posts to show yet.</p>
                 )}
-    
 
                 {posts.length > 0 && hasMorePosts && (
-                    <div ref={loadMoreRef}>
+                    <div className="load-more-posts" ref={loadMoreRef}>
                         <button onClick={fetchMorePosts} disabled={isLoadingMore}>
                             {isLoadingMore ? "Loading..." : "Load more posts"}
                         </button>
@@ -275,7 +347,7 @@ export default function UserFeed(){
                 )}
 
                 {posts.length > 0 && !hasMorePosts && (
-                    <p>No more posts to show.</p>
+                    <p className="no-more-posts">No more posts to show.</p>
                 )}
             </div>
         </div>
